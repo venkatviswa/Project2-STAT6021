@@ -1,0 +1,180 @@
+---
+title: "Proposal"
+author: 'Group 5: Etienne Jimenez, Bardia Nikpour, Christian Ollen,Venkat Viswanathan'
+output:
+  pdf_document:
+    toc: true
+  html_notebook:
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{css, echo=FALSE}
+h1 {
+  color: black;
+}
+
+h2 {
+  color: blue;
+}
+
+h3 {
+  color: green;
+}
+
+p {
+  text-align: justify;
+}
+
+
+```
+
+
+# Introduction
+
+In the world of real estate, grasping the forces, which underpin property values, is of major importance equipping homeowners, investors and city planners among others who are the stakeholders. Overcoming the increasingly convoluted nature of the housing system necessitates databased insights and provides the way forward for profound decision-making. This plan delineates our group’s ambition of how to use a housing sales data set of King County, USA in solving two most important questions. By employing statistical models, we want to bring into light the underlying mechanisms of how specific characteristics of a house affects the property prices, and to what extent some of them, such as the waterfront presence, have an impact on the perceived value of real estate portfolios.
+Our study employs two approaches, linear regression to qualifying the similarity between the flat size and the home price, and logistic to the test impact of water frontage on house being priced above median. Not only can we put the process of appraising property pricing under a lens of continuous analysis, but we can also separate waterfront properties into premium class according to the presence of a waterfront feature and its corresponding price standards.
+Our work is the result of a thorough analysis that has been based on a wide range of sources followed by a long chain of well-established hypotheses. Through data partition into training and test sets we follow the statistical rigour approaches, creating the way to reliable, general insights. In addition to this, our contribution to the property market discourse via its practical implications that offers empirical evidence to corroborate or shoot down existing prevalent market assumptions is another element to the sense in which the endeavour will be valuable to the discourse.
+
+
+# Questions of Interest
+## Part A
+### For linear regression (quantitative response variable):
+To what extent do size and location affect the price of houses in King County, Washington?
+
+The response variable (home price) is quantifiable, making it appropriate for linear regression analysis. This question seeks to determine the relationship between the size of a house's living space and its price.
+
+### For logistic regression (Binary Response Variable):
+"Is the presence of a waterfront (yes or no) associated with the house being priced above the median?" is the question for Logistic Regression (Binary Response Variable).
+
+The response variable in this question is binary; it indicates whether the residence is priced higher than the median. It can therefore be used with logistic regression analysis. Evaluating whether waterfront homes are typically more expensive than non-waterfront homes is the main goal.
+
+## Part B
+
+For the answer to the first question, “How does the housing area size (in square feet) influence the price of the house?” price of the house is the response variable. This continuous variable is a dollar amount spent to buy the house listed in the data set.
+
+Second question. The dependent variable is the value of the house whether it is above or below the median value. This variable is a binary one where if the house prices is above this dataset's median house prices than ‘1’, otherwise ‘0’.
+
+## Part C
+
+To the first question whether size of the rental space and the price of a real estate determine each other, these two major questions need to be answered, because they concern a real estate evaluation determinant. By recognizing the way the square footage of living rooms has an impact on home prices buyers, sellers, as well as professionals in the real estate industry will gain invaluable information. With data, such as number of days on market, maximum and minimum price sold, and the average days on market, this analysis can help in estimating property values, setting listing prices for sellers, and making informed purchasing decisions for buyers. Through it, we further investigation the question regarding housing affordability and the value of space in city dwellings and in rural areas.
+The second issue comes down to the issue of whether the houses located near a waterfront is generally priced more than the average price. This is an interesting question for how much
+ 
+weight is put on natural amenities in real estate values. This inquiry holds much interest since this sheds light on the point why a certain property with unique features, such as a sea frontage, give it a financial value higher than others. This may enable the potential buyers to be aware of the benefits of such amenities and probably do help the sellers to understand how appealing the property would be if such amenities were considered. Furthermore, this analysis can offer profound insight into the quantity of market dynamics, which in turn affect home prices in different areas leading to deeper understanding of the state of the housing market.
+
+
+# Visualization
+## For Question 1
+
+### Living space size vs Price
+```{r echo=FALSE, message=FALSE}
+library(ggplot2)
+library(caret)
+library(dplyr)
+Data<-read.csv("kc_house_data.csv", sep=",", header=TRUE)
+set.seed(6021)
+sample.data<-sample.int(nrow(Data), floor(.50*nrow(Data)), replace = F)
+train<-Data[sample.data, ]
+test<-Data[-sample.data, ]
+
+# Calculate the median price
+median_price <- median(train$price)
+train$above_median <- as.integer(train$price > median_price)
+
+ggplot(train, aes(x = sqft_living, y = price)) +
+  geom_point(alpha = 0.6) +
+  theme_minimal() +
+  labs(title = "Living Space Size vs. Price",
+       x = "Living Space Size (sqft)",
+       y = "Price ($)")
+
+
+```
+
+The scatter plot demonstrates a positive correlation between property price and living space size (measured in square feet). The price of a property typically rises in tandem with the size of the living area. One important point to investigate in our linear regression research is the notion that larger residences are typically more expensive, which is supported by this visualisation.
+
+### Distribution of Prices
+```{r echo=FALSE, message=FALSE}
+ggplot(train, aes(x = price)) +
+  geom_histogram(binwidth = 100000) +
+  theme_minimal() +
+  labs(title = "Distribution of Prices",
+       x = "Price ($)",
+       y = "Frequency")
+```
+
+Most of the house prices are clustered in the lower price range, indicating that the majority of homes are affordably priced.
+
+### Living space size categories vs Price
+
+```{r echo=FALSE, message=FALSE}
+train$sqft_living_cat <- cut(train$sqft_living,
+                             breaks = quantile(train$sqft_living, probs = c(0, 1/3, 2/3, 1), na.rm = TRUE),
+                             include.lowest = TRUE,
+                             labels = c('Small', 'Medium', 'Large'))
+
+# Creating a boxplot for Living Space Size Categories vs. Price
+ggplot(train, aes(x = sqft_living_cat, y = price)) +
+  geom_boxplot() +
+  labs(title = 'Living Space Size Categories vs. Price',
+       x = 'Living Space Size Category',
+       y = 'Price ($)') +
+  theme_minimal()
+```
+
+By categorizing the living space size into small, medium, large, and comparing the price distributions across these categories, we see that larger homes tend to have a higher median price and a wider range of prices.
+
+## For Question 2
+
+### Waterfront vs Price
+```{r echo=FALSE, message=FALSE}
+# Bar Plot of Waterfront Presence vs. Proportion Above Median Price
+waterfront_prop <- train %>%
+  group_by(waterfront) %>%
+  summarise(above_median = mean(above_median)) %>%
+  mutate(waterfront = ifelse(waterfront == 1, "Yes", "No"))
+
+# Creating a bar plot
+ggplot(waterfront_prop, aes(x = waterfront, y = above_median)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Waterfront Presence vs. Proportion Above Median Price",
+       x = "Waterfront Presence (0 = No, 1 = Yes)",
+       y = "Proportion Above Median Price") +
+  theme_minimal()
+```
+
+The percentage of waterfront and non-waterfront homes priced above the median is displayed in this bar plot. Compared to non-waterfront homes, a larger percentage of waterfront homes are priced above the median, indicating that waterfront properties are more expensive.
+
+
+
+### Price Distribution by Waterfront
+```{r echo=FALSE, message=FALSE}
+ggplot(train, aes(x = price, fill = factor(waterfront))) +
+  geom_histogram(aes(y = ..density..), position = "identity", alpha = 0.5, bins = 30, color = "black", linetype = "solid", boundary = 0) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("1" = "blue", "0" = "red"), labels = c("0" = "No Waterfront", "1" = "Waterfront")) +
+  labs(title = 'Price Distribution by Waterfront Presence',
+       x = 'Price ($)',
+       y = 'Density',
+       fill = "Waterfront Presence") +
+  theme_minimal()
+```
+
+Waterfront houses are generally priced higher than non-waterfront houses, supporting the question that waterfront properties command a higher price in the market.
+
+### Prices by Waterfront
+```{r echo=FALSE, message=FALSE}
+train$waterfront <- factor(train$waterfront, levels = c(0, 1), labels = c("No Waterfront", "Waterfront"))
+
+# Creating the boxplot
+ggplot(train, aes(x = waterfront, y = price)) +
+  geom_boxplot() +
+  labs(title = 'Comparison of House Prices: Waterfront vs. Non-Waterfront',
+       x = 'Waterfront Presence (0 = No, 1 = Yes)',
+       y = 'Price ($)') +
+  theme_minimal()
+
+```
+
+This box plot immediately supports our investigation of the second point by offering a comparison of home values between waterfront and non-waterfront properties. It draws attention to the disparity in price distributions, demonstrating that compared to non-waterfront homes, waterfront homes typically have a higher median price and a broader range of values.
