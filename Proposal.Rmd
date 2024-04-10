@@ -89,6 +89,39 @@ ggplot(train, aes(x = sqft_living, y = price)) +
        x = "Living Space Size (sqft)",
        y = "Price ($)")
 
+ggplot(train, aes(x = sqft_living, y = price,size=zipcode)) +
+  geom_point(alpha = 0.6) +
+geom_point(shape=21, alpha=0.5)+
+scale_size(range = c(0.1,12))+
+  labs(title = "Living Space Size vs. Price",
+       x = "Living Space Size (sqft)",
+       y = "Price ($)")
+
+train$zipcode_group<-substring(train$zipcode,1,4)
+
+train$sqft_group <- cut(train$sqft_living,
+                     breaks = c(-Inf, 2000, 5000, Inf),
+                     labels = c("low", "medium", "high"),
+                     include.lowest = TRUE)
+train$price_group<- cut(train$price,
+                     breaks = c(-Inf, 500000, 1000000, Inf),
+                     labels = c("low", "medium", "high"),
+                     include.lowest = TRUE)
+
+ggplot(train, aes(x=zipcode_group, y=price))+
+geom_boxplot(fill="Blue")+
+labs(x="zipcode group", y="Price",
+title="Prices by zipcode group")
+
+
+ggplot(train, aes(x=zipcode_group, fill=sqft_group))+
+geom_bar(position = "stack")+
+labs(x="zipcode group", y="Count", title="Sqft of houses sold by Zipcodes")
+
+ggplot(train, aes(x=zipcode_group, fill=price_group))+
+geom_bar(position = "stack")+
+labs(x="zipcode group", y="Count", title="Price of houses sold by zipcodes")
+
 
 ```
 
