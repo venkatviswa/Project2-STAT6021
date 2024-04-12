@@ -42,31 +42,35 @@ Our work is the result of a thorough analysis that has been based on a wide rang
 
 ## Part A
 ### For linear regression (quantitative response variable):
-To what extent do size and location affect the price of houses in King County, Washington?
+
+**What internal housing factors influence the price of homes in King County from May 2014 to May 2015?**
 
 The response variable (home price) is quantifiable, making it appropriate for linear regression analysis. This question seeks to determine the relationship between the size of a house's living space and its price.
 
 ### For logistic regression (Binary Response Variable):
-"Is the presence of a waterfront (yes or no) associated with the house being priced above the median?" is the question for Logistic Regression (Binary Response Variable).
+
+**"Is the presence of a waterfront (yes or no) associated with the house being priced above the median?" is the question for Logistic Regression (Binary Response Variable).**
 
 The response variable in this question is binary; it indicates whether the residence is priced higher than the median. It can therefore be used with logistic regression analysis. Evaluating whether waterfront homes are typically more expensive than non-waterfront homes is the main goal.
 
 ## Part B
 
-For the answer to the first question, “How does the housing area size (in square feet) influence the price of the house?” price of the house is the response variable. This continuous variable is a dollar amount spent to buy the house listed in the data set.
+For the answer to the first question, *“What internal housing factors influence the price of homes in King County from May 2014 to May 2015? ”* price of the house is the response variable. This continuous variable is a dollar amount spent to buy the house listed in the data set.
 
-Second question. The dependent variable is the value of the house whether it is above or below the median value. This variable is a binary one where if the house prices is above this dataset's median house prices than ‘1’, otherwise ‘0’.
+Predictor Variables: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement. 
+
+Buying a house in the current housing market displays a complex ecosystem of variables that play a role in determining the value of the property. The first thing I think about when buying a house is how large is the house and how many bed/baths are there, but are these the most important internal housing factors or are there additional factors that have an impact on price?  
+
+Second question. The dependent variable is the value of the house whether it is above or below the median value. This variable is a binary one where if the house prices is above this dataset's median house prices than ‘1’, otherwise ‘0’.  
 
 ## Part C
 
-To the first question whether size of the rental space and the price of a real estate determine each other, these two major questions need to be answered, because they concern a real estate evaluation determinant. By recognizing the way the square footage of living rooms has an impact on home prices buyers, sellers, as well as professionals in the real estate industry will gain invaluable information. With data, such as number of days on market, maximum and minimum price sold, and the average days on market, this analysis can help in estimating property values, setting listing prices for sellers, and making informed purchasing decisions for buyers. Through it, we further investigation the question regarding housing affordability and the value of space in city dwellings and in rural areas.
-The second issue comes down to the issue of whether the houses located near a waterfront is generally priced more than the average price. This is an interesting question for how much
- 
-weight is put on natural amenities in real estate values. This inquiry holds much interest since this sheds light on the point why a certain property with unique features, such as a sea frontage, give it a financial value higher than others. This may enable the potential buyers to be aware of the benefits of such amenities and probably do help the sellers to understand how appealing the property would be if such amenities were considered. Furthermore, this analysis can offer profound insight into the quantity of market dynamics, which in turn affect home prices in different areas leading to deeper understanding of the state of the housing market.
+To the first question whether internal factors( such as bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement ) and the price of a real estate determine each other, these two major questions need to be answered, because they concern a real estate evaluation determinant. By recognizing the way the internal factors have an impact on home prices buyers, sellers, as well as professionals in the real estate industry will gain invaluable information. With data, such as number of days on market, maximum and minimum price sold, and the average days on market, this analysis can help in estimating property values, setting listing prices for sellers, and making informed purchasing decisions for buyers. Through it, we further investigation the question regarding housing affordability and the value of space in city dwellings and in rural areas.
+
+The second issue comes down to the issue of whether the houses located near a waterfront is generally priced more than the average price. This is an interesting question for how much weight is put on natural amenities in real estate values. This inquiry holds much interest since this sheds light on the point why a certain property with unique features, such as a sea frontage, give it a financial value higher than others. This may enable the potential buyers to be aware of the benefits of such amenities and probably do help the sellers to understand how appealing the property would be if such amenities were considered. Furthermore, this analysis can offer profound insight into the quantity of market dynamics, which in turn affect home prices in different areas leading to deeper understanding of the state of the housing market.
 
 
-### Living space size vs Price
-```{r echo=FALSE, message=FALSE}
+```{r include=FALSE}
 library(ggplot2)
 library(caret)
 library(dplyr)
@@ -80,24 +84,6 @@ test<-Data[-sample.data, ]
 median_price <- median(train$price)
 train$above_median <- as.integer(train$price > median_price)
 
-
-ggplot(train, aes(x = sqft_living, y = price)) +
-  geom_point(alpha = 0.6) +
-  theme_minimal() +
-  labs(title = "Living Space Size vs. Price",
-       x = "Living Space Size (sqft)",
-       y = "Price ($)")
-
-ggplot(train, aes(x = sqft_living, y = price,size=zipcode)) +
-  geom_point(alpha = 0.6) +
-geom_point(shape=21, alpha=0.5)+
-scale_size(range = c(0.1,12))+
-  labs(title = "Living Space Size vs. Price",
-       x = "Living Space Size (sqft)",
-       y = "Price ($)")
-
-train$zipcode_group<-substring(train$zipcode,1,4)
-
 train$sqft_group <- cut(train$sqft_living,
                      breaks = c(-Inf, 2000, 5000, Inf),
                      labels = c("low", "medium", "high"),
@@ -108,41 +94,16 @@ train$price_group<- cut(train$price,
                      include.lowest = TRUE)
 
 
-ggplot(train, aes(x=zipcode_group, y=price))+
-geom_boxplot(fill="Blue")+
-labs(x="zipcode group", y="Price",
-title="Prices by zipcode group")
-
-
-ggplot(train, aes(x=zipcode_group, fill=sqft_group))+
-geom_bar(position = "stack")+
-labs(x="zipcode group", y="Count", title="Sqft of houses sold by Zipcodes")
-
-ggplot(train, aes(x=zipcode_group, fill=price_group))+
-geom_bar(position = "stack")+
-labs(x="zipcode group", y="Count", title="Price of houses sold by zipcodes")
-
-
 ```
 
 
-## For Question 1
-
-What internal housing factors influence the price of homes in King County from May 2014 to May 2015? 
-
-Response Variable: Price 
-
-Predictor Variables: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement 
-
-Buying a house in the current housing market displays a complex ecosystem of variables that play a role in determining the value of the property. The first thing I think about when buying a house is how large is the house and how many bed/baths are there, but are these the most important internal housing factors or are there additional factors that have an impact on price? 
-
-```{r}
+```{r include=FALSE}
 
 #summarize bedroom data
-summary(data$bedrooms)  
+summary(Data$bedrooms)  
 
 #summarize bathroom data
-summary(data$bathrooms)  
+summary(Data$bathrooms)  
 
 #create low, medium, high categories for bedrooms and bathrooms
 train$bedrooms_group <- cut(train$bedrooms, 
@@ -157,28 +118,29 @@ train$bathrooms_group<- cut(train$bathrooms,
 
 # Visualization
 
-```{r}
-ggplot(train, aes(x=bedrooms_group, fill=price_group))+  
+## Question 1
+```{r echo=FALSE}
+ggplot(train, aes(x=sqft_group, fill=price_group))+  
   geom_bar(position = "stack")+  
-  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bedrooms ")+  
+  labs(x="Square foot group", y="Count of Price Group", title="Comparison of The Price by the Amount of Sqft ")+  
   theme(plot.title = element_text(hjust = .5))  
 ```
 
 This bar graph shows again that the homes with a low amount of square footage have a low/medium price the homes with a medium square footage have a more equal distribution of the three price categories and the homes with a high amount of square footage have a higher price.
 
-```{r}
+```{r echo=FALSE}
 ggplot(train, aes(x=bedrooms_group, fill=price_group))+  
   geom_bar(position = "stack")+  
   labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bedrooms ")+  
   theme(plot.title = element_text(hjust = .5))  
 ```
 
-This bar graph shos that homes with more bedrooms typically have a higher price.
+This bar graph shows that homes with more bedrooms typically have a higher price.
 
-```{r}
+```{r echo=FALSE}
 ggplot(train, aes(x=bathrooms_group, fill=price_group))+  
   geom_bar(position = "stack")+  
-  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bathrooms ")+  
+  labs(x="Number of Bathrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bathrooms ")+  
   theme(plot.title = element_text(hjust = .5))  
 ```
 
@@ -217,7 +179,7 @@ ggplot(train, aes(x = sqft_living_cat, y = price)) +
 
 By categorizing the living space size into small, medium, large, and comparing the price distributions across these categories, we see that larger homes tend to have a higher median price and a wider range of prices.
 
-## For Question 2
+## Question 2
 
 ### Waterfront vs Price
 ```{r echo=FALSE, message=FALSE}
@@ -241,7 +203,7 @@ The percentage of waterfront and non-waterfront homes priced above the median is
 
 
 ### Price Distribution by Waterfront
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE,warning=FALSE}
 ggplot(train, aes(x = price, fill = factor(waterfront))) +
   geom_histogram(aes(y = ..density..), position = "identity", alpha = 0.5, bins = 30, color = "black", linetype = "solid", boundary = 0) +
   geom_density(alpha = 0.5) +
@@ -270,3 +232,29 @@ ggplot(train, aes(x = waterfront, y = price)) +
 ```
 
 This box plot immediately supports our investigation of the second point by offering a comparison of home values between waterfront and non-waterfront properties. It draws attention to the disparity in price distributions, demonstrating that compared to non-waterfront homes, waterfront homes typically have a higher median price and a broader range of values.
+
+*Appendix*
+
+Below are the list of variables along with what they stand for in the dataset provided
+
+- id - Unique ID for each home sold
+- date - Date of the home sale
+- price - Price of each home sold
+- bedrooms - Number of bedrooms
+- bathrooms - Number of bathrooms, where .5 accounts for a room with a toilet but no shower
+- sqft_living - Square footage of the apartments interior living space
+- sqft_lot - Square footage of the land space
+- floors - Number of floors
+- waterfront - A dummy variable for whether the apartment was overlooking the waterfront or not
+- view - An index from 0 to 4 of how good the view of the property was
+- condition - An index from 1 to 5 on the condition of the apartment,
+- grade - An index from 1 to 13, where 1-3 falls short of building construction and design, 7 has an average level of construction and design, and 11-13 have a high quality level of construction and design.
+- sqft_above - The square footage of the interior housing space that is above ground level
+- sqft_basement - The square footage of the interior housing space that is below ground level
+- yr_built - The year the house was initially built
+- yr_renovated - The year of the house’s last renovation
+- zipcode - What zipcode area the house is in
+- lat - Lattitude
+- long - Longitude
+- sqft_living15 - The square footage of interior housing living space for the nearest 15 neighbors
+- sqft_lot15 - The square footage of the land lots of the nearest 15 neighbors
