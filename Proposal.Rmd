@@ -39,6 +39,7 @@ Our work is the result of a thorough analysis that has been based on a wide rang
 
 
 # Questions of Interest
+
 ## Part A
 ### For linear regression (quantitative response variable):
 To what extent do size and location affect the price of houses in King County, Washington?
@@ -64,9 +65,6 @@ The second issue comes down to the issue of whether the houses located near a wa
 weight is put on natural amenities in real estate values. This inquiry holds much interest since this sheds light on the point why a certain property with unique features, such as a sea frontage, give it a financial value higher than others. This may enable the potential buyers to be aware of the benefits of such amenities and probably do help the sellers to understand how appealing the property would be if such amenities were considered. Furthermore, this analysis can offer profound insight into the quantity of market dynamics, which in turn affect home prices in different areas leading to deeper understanding of the state of the housing market.
 
 
-# Visualization
-## For Question 1
-
 ### Living space size vs Price
 ```{r echo=FALSE, message=FALSE}
 library(ggplot2)
@@ -81,6 +79,7 @@ test<-Data[-sample.data, ]
 # Calculate the median price
 median_price <- median(train$price)
 train$above_median <- as.integer(train$price > median_price)
+
 
 ggplot(train, aes(x = sqft_living, y = price)) +
   geom_point(alpha = 0.6) +
@@ -108,6 +107,7 @@ train$price_group<- cut(train$price,
                      labels = c("low", "medium", "high"),
                      include.lowest = TRUE)
 
+
 ggplot(train, aes(x=zipcode_group, y=price))+
 geom_boxplot(fill="Blue")+
 labs(x="zipcode group", y="Price",
@@ -124,6 +124,65 @@ labs(x="zipcode group", y="Count", title="Price of houses sold by zipcodes")
 
 
 ```
+
+
+## For Question 1
+
+What internal housing factors influence the price of homes in King County from May 2014 to May 2015? 
+
+Response Variable: Price 
+
+Predictor Variables: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement 
+
+Buying a house in the current housing market displays a complex ecosystem of variables that play a role in determining the value of the property. The first thing I think about when buying a house is how large is the house and how many bed/baths are there, but are these the most important internal housing factors or are there additional factors that have an impact on price? 
+
+```{r}
+
+#summarize bedroom data
+summary(data$bedrooms)  
+
+#summarize bathroom data
+summary(data$bathrooms)  
+
+#create low, medium, high categories for bedrooms and bathrooms
+train$bedrooms_group <- cut(train$bedrooms, 
+                     breaks = c(-Inf, 2, 3.1, Inf), 
+                     labels = c("low", "medium", "high"), 
+                     include.lowest = TRUE) 
+train$bathrooms_group<- cut(train$bathrooms, 
+                     breaks = c(-Inf, 1.6, 2.5, Inf), 
+                     labels = c("low", "medium", "high"), 
+                     include.lowest = TRUE)
+```
+
+# Visualization
+
+```{r}
+ggplot(train, aes(x=bedrooms_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bedrooms ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shows again that the homes with a low amount of square footage have a low/medium price the homes with a medium square footage have a more equal distribution of the three price categories and the homes with a high amount of square footage have a higher price.
+
+```{r}
+ggplot(train, aes(x=bedrooms_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bedrooms ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shos that homes with more bedrooms typically have a higher price.
+
+```{r}
+ggplot(train, aes(x=bathrooms_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bathrooms ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shos that homes with more bathrooms typically have a higher price.
 
 The scatter plot demonstrates a positive correlation between property price and living space size (measured in square feet). The price of a property typically rises in tandem with the size of the living area. One important point to investigate in our linear regression research is the notion that larger residences are typically more expensive, which is supported by this visualisation.
 
