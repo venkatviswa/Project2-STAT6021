@@ -1,0 +1,370 @@
+---
+title: "Question 1"
+author: 'Group 5: Etienne Jimenez, Bardia Nikpour, Christian Ollen,Venkat Viswanathan'
+output:
+  word_document:
+    toc: true
+  html_notebook:
+    toc: true
+    toc_float: true
+    number_sections: true
+  pdf_document:
+    toc: true
+---
+
+```{css, echo=FALSE}
+h1 {
+  color: black;
+}
+
+h2 {
+  color: blue;
+}
+
+h3 {
+  color: green;
+}
+
+p {
+  text-align: justify;
+}
+
+
+```
+
+# Section 1: 
+
+# Section 2: 
+
+- id - Unique ID for each home sold
+- date - Date of the home sale
+- price - Price of each home sold
+- bedrooms - Number of bedrooms
+- bathrooms - Number of bathrooms, where .5 accounts for a room with a toilet but no shower
+- sqft_living - Square footage of the apartments interior living space
+- sqft_lot - Square footage of the land space
+- floors - Number of floors
+- waterfront - A dummy variable for whether the apartment was overlooking the waterfront or not
+- view - An index from 0 to 4 of how good the view of the property was
+- condition - An index from 1 to 5 on the condition of the apartment,
+- grade - An index from 1 to 13, where 1-3 falls short of building construction and design, 7 has an average level of construction and design, and 11-13 have a high quality level of construction and design.
+- sqft_above - The square footage of the interior housing space that is above ground level
+- sqft_basement - The square footage of the interior housing space that is below ground level
+- yr_built - The year the house was initially built
+- yr_renovated - The year of the house’s last renovation
+- zipcode - What zipcode area the house is in
+- lat - Lattitude
+- long - Longitude
+- sqft_living15 - The square footage of interior housing living space for the nearest 15 neighbors
+- sqft_lot15 - The square footage of the land lots of the nearest 15 neighbors
+-sqft_group - divides the square feet of the homes into "low", "medium" and "high" groups
+-price_group - divides the price of the homes into "low", "medium" and "high" groups
+- bedrooms_group - divides the number of bedrooms of the homes into "low", "medium" and "high" groups
+- bathrooms_group - divides the squar of the homes into "low", "medium" and "high" groups
+
+# Section 3
+
+Questions 1: 
+
+**What internal housing factors influence the price of homes in King County from May 2014 to May 2015?**
+
+To the first question whether internal factors( such as bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement ) and the price of a real estate determine each other, these two major questions need to be answered, because they concern a real estate evaluation determinant. By recognizing the way the internal factors have an impact on home prices buyers, sellers, as well as professionals in the real estate industry will gain invaluable information. With data such as bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement this analysis can help in estimating property values, setting list prices for sellers, and making informed purchasing decisions for buyers. Through this, we can further investigate the question regarding housing affordability and the value of space in city dwellings and in rural areas.
+
+The response variable (home price) is quantifiable, making it appropriate for linear regression analysis. This question seeks to determine the relationship between the internal living factors ( bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, sqft_basement) and its price.
+
+# Section 4
+
+# Visualization
+
+```{r include=FALSE}
+#setup for visulizations
+library(ggplot2)
+library(caret)
+library(dplyr)
+library(tidyverse)
+library(faraway)
+library(MASS) 
+library(car)
+Data<-read.csv("kc_house_data.csv", sep=",", header=TRUE)
+set.seed(6021)
+sample.data<-sample.int(nrow(Data), floor(.50*nrow(Data)), replace = F)
+train<-Data[sample.data, ]
+test<-Data[-sample.data, ]
+
+# Calculate the median price
+median_price <- median(train$price)
+train$above_median <- as.integer(train$price > median_price)
+
+train$sqft_group <- cut(train$sqft_living,
+                     breaks = c(-Inf, 2000, 5000, Inf),
+                     labels = c("low", "medium", "high"),
+                     include.lowest = TRUE)
+train$price_group<- cut(train$price,
+                     breaks = c(-Inf, 500000, 1000000, Inf),
+                     labels = c("low", "medium", "high"),
+
+                                          include.lowest = TRUE)
+#summarize bedroom data
+summary(Data$bedrooms)  
+
+#summarize bathroom data
+summary(Data$bathrooms)  
+
+#create low, medium, high categories for bedrooms and bathrooms
+train$bedrooms_group <- cut(train$bedrooms, 
+                     breaks = c(-Inf, 2, 3.1, Inf), 
+                     labels = c("low", "medium", "high"), 
+                     include.lowest = TRUE) 
+train$bathrooms_group<- cut(train$bathrooms, 
+                     breaks = c(-Inf, 1.6, 2.5, Inf), 
+                     labels = c("low", "medium", "high"), 
+                     include.lowest = TRUE)
+
+```
+
+```{r echo=FALSE}
+ggplot(train, aes(x=sqft_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Square foot group", y="Count of Price Group", title="Comparison of The Price by the Amount of Sqft ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shows again that the homes with a low amount of square footage have a low/medium price the homes with a medium square footage have a more equal distribution of the three price categories and the homes with a high amount of square footage have a higher price.
+
+```{r echo=FALSE}
+ggplot(train, aes(x=bedrooms_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Number of Bedrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bedrooms ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shows that homes with less bedrooms typically have a lower price. Homes with a medium number of bedrooms typically have a medium
+price category but also have a homes in both the low and high price category. Homes with a high number of bedrooms typically have a high price
+category.
+
+```{r echo=FALSE}
+ggplot(train, aes(x=bathrooms_group, fill=price_group))+  
+  geom_bar(position = "stack")+  
+  labs(x="Number of Bathrooms Group", y="Count of Price Group", title="Comparison of The Price by the Number of Bathrooms ")+  
+  theme(plot.title = element_text(hjust = .5))  
+```
+
+This bar graph shows that homes with less bathrooms typically have a lower price. Homes with a medium number of bathrooms typically have a medium
+price category but also have a homes in both the low and high price category. Homes with a high number of bathrooms typically have a high price
+category.
+
+### Distribution of Prices
+```{r echo=FALSE, message=FALSE}
+ggplot(train, aes(x = price)) +
+  geom_histogram(binwidth = 100000) +
+  theme_minimal() +
+  labs(title = "Distribution of Prices",
+       x = "Price ($)",
+       y = "Frequency")
+```
+
+Most of the house prices are clustered in the lower price range, indicating that the majority of homes are affordably priced.
+
+### Living space size categories vs Price
+
+```{r echo=FALSE, message=FALSE}
+train$sqft_living_cat <- cut(train$sqft_living,
+                             breaks = quantile(train$sqft_living, probs = c(0, 1/3, 2/3, 1), na.rm = TRUE),
+                             include.lowest = TRUE,
+                             labels = c('Small', 'Medium', 'Large'))
+
+# Creating a boxplot for Living Space Size Categories vs. Price
+ggplot(train, aes(x = sqft_living_cat, y = price)) +
+  geom_boxplot() +
+  labs(title = 'Living Space Size Categories vs. Price',
+       x = 'Living Space Size Category',
+       y = 'Price ($)') +
+  theme_minimal()
+```
+
+By categorizing the living space size into small, medium, large, and comparing the price distributions across these categories, we see that larger homes tend to have a higher median price and a wider range of prices.
+
+```{r echo=FALSE}
+
+ 
+ggplot(train, aes(x=bathrooms, y=price))+
+  geom_boxplot()+
+  labs(x="Number of Bathrooms", y="Price of House",
+  title="Boxplot of Price against Bathrooms")
+ 
+```
+This relationship is more noticeable, as having more bathrooms significantly increases the housing price.
+
+# Section 5
+
+For this model we are looking at how internal housing factors effect the price of the home. In this model there are multiple
+predictors influencing the response variable price, therefore multiple linear regression is appropriate.
+
+```{r}
+train_mlr <- train[, c('bedrooms', 'bathrooms', 'sqft_living', 'floors', 'condition', 'grade', 'sqft_above', 'sqft_basement', 'price')]
+pairs(train_mlr, lower.panel = NULL, main="Scatterplot of Quantitative Variables")
+```
+
+
+```{r}
+round(cor(train_mlr),3)
+```
+
+We note that predictors bathrooms, sqft_living, grade, and sqft_above have moderate to high
+correlation with the response variable price.
+
+The predictors bedrooms, floors, condition, and sqft_basement do not have a strong correlation 
+to the response variable price.
+
+Additionally, sqft_living and sqft_above seems to be highly correlated. We will consider a 
+subset of the two in the reduced model.
+
+We will consider using bathrooms, sqft_living and grade in the reduced model.
+
+
+```{r include=FALSE}
+# fit a regression to the reduced model with all predictors
+result_mlr<-lm(price~., data=train_mlr)
+```
+
+```{r}
+# fit a regression to the reduced model with predictors bathrooms, sqft_living and grade
+reduced_mlr<-lm(price~bathrooms+sqft_living+grade, data=train_mlr)
+summary(reduced_mlr)
+```
+The p-value for the ANOVA F test is very small. Additionally, the individual t tests
+suggest all of the predictors are significant, given the other predictors.
+
+```{r}
+#check VIF for signs of multicollinearity
+faraway::vif(reduced_mlr)
+```
+VIF's for this reduced model are all below 4 suggesting there is not a huge issue with
+milticollinearity.
+
+
+```{r}
+#compare the full model with the reduced model
+anova(reduced_mlr, result_mlr)
+```
+Hypothesis for the general linear F-Test
+H0 : β1 = β4 = β5 = β6 = β7 = 0.
+Ha : not all β1, β4, β5, β6, β7 are zero.
+
+The F-Stat is very large with a small p-value. Our data suggests we can drop 
+bedrooms, floors, condition, sqft_above and sqft_basement and go with the reduced 
+model. 
+
+
+```{r}
+#check assumptions
+par(mfrow=c(2,2))
+plot(reduced_mlr)
+```
+We see that the residuals are not evenly scattered across the
+horizontal axis, and their vertical variation is not constant across 
+the plot. So neither assumption 1 nor assumption 2 is met.
+
+First we transform the y variable.
+
+```{r}
+boxcox(reduced_mlr, lambda=seq(-0.5,0.5,0.1))
+```
+Based on the Box Cox plot, a log transformation on the response variable should be performed,
+so y∗ = log(y).
+
+```{r}
+#log transform y
+train_mlr$ystar<-log(train_mlr$price)
+```
+
+```{r}
+reduced_mlr_2<-lm(ystar~bathrooms+sqft_living+grade, data=train_mlr)
+##create diagnostic plots after y transformation
+par(mfrow=c(2,2))
+plot(reduced_mlr_2)
+```
+We see that the residuals are not evenly scattered across the
+horizontal axis so we transform our predictor variables.
+
+```{r}
+avPlots(reduced_mlr_2)
+```
+```{r}
+train_mlr <- train_mlr[train_mlr$bathrooms != 0, ]
+#transform x variables
+train_mlr$log_bathrooms<-log(train_mlr$bathrooms)
+train_mlr$log_sqft_living<-log(train_mlr$sqft_living)
+train_mlr$log_grade<-log(train_mlr$grade)
+```
+
+```{r}
+reduced_mlr_3<-lm(ystar~log_bathrooms+log_sqft_living+log_grade, data=train_mlr)
+##create diagnostic plots after x and y transformations
+par(mfrow=c(2,2))
+plot(reduced_mlr_3)
+```
+```{r}
+summary(reduced_mlr_3)
+```
+Intuitively it does not make sense that the price decreases as you add bathrooms.
+So I removed the predictor bathrooms and the below graphs show that assumptions are met.
+
+
+```{r}
+reduced_mlr_4<-lm(ystar~log_sqft_living+log_grade, data=train_mlr)
+##create diagnostic plots
+par(mfrow=c(2,2))
+plot(reduced_mlr_4)
+```
+```{r}
+summary(reduced_mlr_4)
+```
+
+
+```{r}
+anova(reduced_mlr_3, reduced_mlr_4)
+```
+
+
+```{r}
+# Outliers
+##externally studentized residuals
+ext.student.res<-rstudent(reduced_mlr_4)
+##identify
+ext.student.res[abs(ext.student.res)>3]
+```
+
+
+```{r}
+##leverages
+lev<-lm.influence(reduced_mlr_4)$hat
+n<-dim(Data)[1]
+p<-3
+##identify
+lev[lev>8*p/n]
+```
+
+```{r}
+#influential observations in terms of DFFITS
+DFFITS<-dffits(reduced_mlr_4)
+DFFITS[abs(DFFITS)>8*sqrt(p/n)]
+```
+
+```{r}
+#influential observations in terms of DFBETAS
+DFBETAS<-dfbetas(reduced_mlr_4)
+abs(DFBETAS)>2/sqrt(n)
+```
+
+```{r}
+COOKS<-cooks.distance(reduced_mlr_4)
+COOKS[COOKS>1]
+```
+
+
+
+
+
+
+
