@@ -1,0 +1,136 @@
+---
+title: "Question2"
+output: pdf_document
+date: "2024-04-24"
+---
+
+**Question 2 : Does the presence of one or more of waterfront,Condition, View, Grade, Yr Built, Yr Renovated cause the price of house being sold above the median price?** 
+
+*view - An index from 0 to 4 of how good the view of the property was: 0 = No view, 1 = Fair 2 = Average, 3 = Good, 4 = Excellent*
+*condition - An index from 1 to 5 on the condition of the apartment: 1 = Poor- Worn out, 2 = Fair- Badly worn, 3 = Average, 4 = Good, 5= Very Good*
+*grade - An index from 1 to 13, where 1-3 falls short of building construction and design, 7 has an average level of construction and design, and 11-13 have a high quality level of construction and design*
+
+
+1.Train and Test data sets 
+```{r include=FALSE}
+library(ggplot2)
+library(caret)
+library(dplyr)
+Data<-read.csv("kc_house_data.csv", sep=",", header=TRUE)
+
+median_price <- median(Data$price)
+Data$above_median <- as.integer(Data$price > median_price)
+Data$waterfront<-factor(Data$waterfront)
+Data$condition_boolean<-factor(as.integer(Data$condition>3))
+Data$view_boolean<-factor(as.integer(Data$view>2))
+Data$grade_boolean<-factor(as.integer(Data$grade>10))
+
+
+set.seed(6021)
+sample.data<-sample.int(nrow(Data), floor(.50*nrow(Data)), replace = F)
+train<-Data[sample.data, ]
+test<-Data[-sample.data, ]
+
+
+options(scipen=999)
+
+```
+2.Use GLM and Frame the logistic Regression equation  
+
+
+```{r}
+result<-glm(formula=above_median~waterfront+condition_boolean+view_boolean+grade_boolean+yr_built+yr_renovated,family=binomial,data=train)
+summary(result)
+```
+*Regression Equation is as follows*
+$$log(\frac{\hat\pi}{1+\hat\pi})=-9.8695+0.2295\ waterfront1+0.1756\ condition\_boolean1+16.2102\ grade\_boolean1+1.9211\ view\_boolean+0.0049\ yr\_built+0.0004\ yr\_renovated$$
+Inference : 
+
+*coefficient for waterfront is 0.2295*
+  * Estimated log odds of higher than median price for a property with waterfront is 0.2295 more than property without waterfront while controlling for condition, grade , view , year built and year renovated
+  * Estimated  odds of higher than median price for a property with waterfront is exp(0.2295)=1.2579 times the odds of property without waterfront while controlling for condition, grade , view , year built and year renovated
+  * Assessing the coefficient for Waterfront using Wald test :
+    - $H_{0}$ is $\beta_{1}$=0. $H_{a}$ is $\beta_{1}\neq\ 0$
+    - Test statistic is Z = $\frac{\hat\beta_{1}-0}{se(\hat\beta_{1})}$ = $\frac{0.2296}{0.4139}=0.5547$
+    - P value is 0.5791 which is more than test statistic and also much more than 0.05
+    - we accept the null hypotheses and can drop the waterfront from the logistic regression model
+  
+
+*coefficient for condition is 0.1756*
+  * Estimated log odds of higher than median price for a property in good condition is 0.1756 more than property in not good condition while controlling for waterfront, grade , view , year built and year renovated
+  * Estimated  odds of higher than median price for a property in good condition is exp(0.2295)=1.1919 times the odds of property not in good condition while controlling for waterfront, grade , view , year built and year renovated
+
+*coefficient for grade is 16.2102 and standard error is 141.4962*
+  * since the standard error is very high the predictor is not reliable and recommend to drop the predictor*
+
+*coefficient for view is 1.9211*
+  *. Estimated log odds of higher than median price for a property with good view is 1.9211 more than property not having a good view while controlling for waterfront, grade , condition , year built and year renovated
+  * Estimated  odds of higher than median price for a property in good view is exp(1.9211)=6.828 times the odds of property with a good view while controlling for waterfront, grade , condition , year built and year renovated
+  
+*coeeficient for year built is 0.0049*
+  *. for every year thats added to the year built ( as in newer property) Estimated log odds of higher than median price for a property is 0.0049 more  while controlling for waterfront, grade , condition , view and year renovated
+  * for every year thats added to the year built ( as in newer property) Estimated odds is exp(0.0049)=1.005 more  while controlling for waterfront, grade , condition , year built and year renovated
+  
+*coeeficient for year renovated is 0.0004*
+  *. for every year thats added to the year renovated ( as in newer property) Estimated log odds of higher than median price for a property is 0.0049 more  while controlling for waterfront, grade , view ,condition and year built 
+  * for every year thats added to the year renovated ( as in newer property) Estimated odds is exp(0.0049)=1.004 more  while controlling for waterfront, grade , condition , view and year built 
+
+**Dropping Waterfront and grade we create a reduced model next**
+
+```{r}
+reduced<-glm(formula=above_median~condition_boolean+view_boolean+yr_built+yr_renovated,family=binomial,data=train)
+summary(reduced)
+```
+*Updated Regression Equation is as follows*
+$$log(\frac{\hat\pi}{1+\hat\pi})=-11.7396+0.1674\ condition\_boolean1+2.0948\ view\_boolean+0.0058\ yr\_built+0.0004\ yr\_renovated$$
+5. Determine usefulness of model using Likelihood Ratio test 
+ $H_{0}$ is $\beta_{1}$=$\beta_{2}$=$\beta_{3}$=$\beta_{4}$=0. $H_{a}$ is atleast one coefficient is non zero
+
+$$\Delta G^{2}=D(R)-D(F) = 14979-14550=429 $$
+P value is 1- pchisq(429,4)= 0
+Critical value is qchisq(0.95,4) = 9.48995
+We reject the null hypothesis and support our four predictor over the intercept-only model.
+
+6. Create confusion matrix 
+
+```{r}
+##predicted survival rate for test data based on training data
+preds<-predict(reduced,newdata=test, type="response")
+##add predicted probabilities and classification based on threshold
+test.new<-data.frame(test,preds,preds>0.5)
+##disply actual response, predicted prob, and classification based on threshold
+#head(test.new[,c(22,23,24,25,26,27)], )
+table(test$above_median, preds>0.5)
+```
+
+Error rate is (1512+3252)/10807 = 0.44
+Accuracy is (3889+2154)/10807 = 0.56
+FPR is 1512/(1512+3889)=0.2799
+FNR is 3252/(3252+2154)=0.6015
+TPR is 2154/(3252+2154)=0.3984
+TNR is 3889/(1512+3889)=0.72
+
+7. ROC Curve
+```{r}
+library(ROCR)
+##produce the numbers associated with classification table
+rates<-ROCR::prediction(preds, test$above_median)
+##store the true positive and false positive rates
+roc_result<-ROCR::performance(rates,measure="tpr", x.measure="fpr")
+##plot ROC curve and overlay the diagonal line for random guessing
+plot(roc_result, main="ROC Curve for Reduced Model")
+lines(x = c(0,1), y = c(0,1), col="red")
+points(x=0.2799, y=0.3984, col="blue", pch=16)
+```
+
+ROC above is above the diagonal so it does better than random guessing
+
+8. AUC 
+
+```{r}
+auc<-performance(rates, measure = "auc")
+auc@y.values
+```
+
+AUC is around 0.579 which is greater than 0.5 so it does better than random guessing 
+
