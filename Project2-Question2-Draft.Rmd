@@ -1,0 +1,385 @@
+---
+title: "Project 2 - Question 2"
+author: "Etienne Jimenez"
+output:
+  pdf_document:
+    extra_dependencies: ["amsmath", "amssymb", "amsthm", "mathtools"]
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+Data<-read.csv("kc_house_data.csv", sep=",", header=TRUE)
+
+compare<-Data$price > 450000
+Data.new<-data.frame(Data, compare)
+
+#convert to factor
+condition_med<-Data.new$condition > 3
+view_med<-Data.new$view > 0
+grade_med<-Data.new$grade > 10
+Data.new$waterfront<-factor(Data.new$waterfront)
+
+#merge into the original data frame
+factored<-data.frame(Data.new, condition_med, view_med, grade_med)
+
+set.seed(6021)
+sample.data<-sample.int(nrow(factored), floor(.50*nrow(factored)), replace = F)
+train<-factored[sample.data, ]
+test<-factored[-sample.data, ]
+
+library(tidyverse)
+```
+
+
+# Description of Variables
+
+**Waterfront**
+
+The waterfront variable is determining whether the house in question is located near the waterfront or not. We are inclined to believe this could be a relevant predictor because houses near water are expected to be more expensive. Consider the following visualization
+
+
+```{r}
+#middle<-median(train$price)
+#compare<-train$price > middle
+#train.new<-data.frame(train, compare)
+
+#train.new$waterfront<-factor(train.new$waterfront)
+```
+
+
+```{r}
+ggplot(train, aes(x=waterfront, fill=compare))+
+  geom_bar(position = "fill")+
+  labs(x="House Overlooking the Waterfront", y="Proportion", 
+       title="Proportion of Waterfront Houses above the median House Price")
+
+```
+
+
+There is a considerable proportion of houses overlooking the waterfront which are also above the median house price. To have a better idea of how many such houses we have in all, we also show a two-way table with the counts of houses belonging to each category
+
+```{r}
+table(train$waterfront, train$compare)
+```
+Out of almost 11,000 entries of houses, it appears only 84 of them are overlooking the waterfront after all, which may lead to this variable not being too influential in the final model.
+
+
+
+**Condition**
+
+Condition is a self-explanatory categorical variable, in which it indicates the condition of an apartment in a scale of 1 to 5. Nicer apartments may be sold at a higher price than apartments which have lower ratings. 
+
+
+
+```{r}
+ggplot(train, aes(x=condition, fill=compare))+
+  geom_bar(position = "fill")+
+  labs(x="Condition of House", y="Proportion", 
+       title="Proportion of Houses above the Median House Price by Condition")
+```
+
+Indeed, we see a connection between the condition of a house and the house being above median price for the higher ratings. The proportion of houses which exceed the median increase as the rating increases.
+
+Again, we wish to have an idea of the total number of houses for each condition rating. We have the following two-way table
+
+
+```{r}
+table(train$condition, train$compare)
+```
+We see that very few houses have lower ratings, and most houses are in the median, 3, or above. These numbers express a strong relationship between the condition and a house being priced above the median.
+
+
+
+**View**
+
+The view variable rates on a scale of 0 to 4 how good the view of the property was. The median value for this variable is 0, which may indicate that only half of all apartments had a somewhat favorable view. We see a distribution of the proportions for each rating below 
+
+
+```{r}
+ggplot(train, aes(x=view, fill=compare))+
+  geom_bar(position = "fill")+
+  labs(x="House View", y="Proportion", 
+       title="Proportion of Houses above the Median House Price by View")
+```
+
+
+The proportion of houses above median value appears to increase as the view gets improved, and it still shows a high percentage when having a 0 rating after all. We present the counts from the two-way table as follows 
+
+```{r}
+table(train$view, train$compare)
+```
+As mentioned before, a vast majority of houses have a view rating of 0, as we have over 9,000 of the almost 11,000 entries having this rating. However, out of all houses with a higher view rating, over 75% of them were priced above the median across all four levels.
+
+
+**Grade**
+
+For the last categorical variable, grade is highlighting the quality level of the building's contruction and design. It is indexed from 1 to 13, and houses with ratings 11-13 are considered to be of the highest quality. We see the proportion of houses being above or below the median price by grade.
+
+```{r}
+train$grade<-factor(train$grade)
+
+ggplot(train, aes(x=grade, fill=compare))+
+  geom_bar(position = "fill")+
+  labs(x="Grade", y="Proportion", 
+       title="Proportion of Houses above the Median House Price by Grade")
+```
+
+We observe that there are no houses with grade levels 1 or 2. And that beginning from grade level 8, all subsequent levels have over 50% of the houses being above the median price. More importantly, this bar chart appears to highlight a positive relationship between the grade and being above the median price for houses.
+
+Again, we present a two-way table to highlight the total amounts of houses over each grade level.
+
+```{r}
+table(train$grade, train$compare)
+```
+
+We see that the vast majority of houses (it's over 9,000) have been given ratings between 6 and 9, which means that they have an average level of construction and design. Very few of them were given the highest quality level ratings. 
+
+
+
+**Year Built**
+
+We now present the first of two numerical predictor variables, and that is the year the house was first built. Given that this data set includes houses built from the early 1900s, we will split the houses into sets of decades, starting with the 1900s, then the 1910s, and so on.
+
+For this visualization, we will only consider houses which are priced lower than $1,000,000. This comprises 10,060 of the 10,806 houses, which is over 93% of the total and can give us a close enough approximation of the full picture without relying too much on outliers. We will start by determining what is the proportion of all houses per every decade as follows
+
+```{r}
+# convert yr_built into factor, then consider only those houses < $1000000
+#train.new$yr_built<-factor(train.new$yr_built)
+lower<-train[which(train$price < 1000000),]
+
+# separate the years into decades
+
+ggplot(lower, aes(x=yr_built, fill=compare))+
+  geom_bar(position = "fill")+
+  labs(x="Year Built", y="Proportion", 
+       title="Proportion of Houses above the Median House Price by Year Built")
+  #geom_hline(yintercept=middle,linetype=2)
+```
+
+
+```{r, include=FALSE}
+#lower$yr_built<-factor(lower$yr_built, labels<-seq(1900, 2019, by=10))
+```
+
+
+We can see a good proportion of house prices remain steadily above median until we enter the 1950s decade, where we experience a sudden drop on the total houses above the median from that era. Beginning from the 1950s, more and more house prices have been slowly making their way up above the median, but it is still unclear whether a linear relationship exists at all.
+
+Similarly, we can consider a boxplot of the average house prices per decade they were built and compare them with the current median price.
+
+
+```{r, include=FALSE}
+ggplot(lower, aes(x=yr_built, y=price))+
+  geom_boxplot()+
+  labs(x="Year House was Built", y="Price of House",
+  title="Boxplot of Price against Year Built")+
+  geom_hline(yintercept=450000,linetype=2)
+```
+
+On the above graph, the dashed line marks the current median price for houses from this data set. While the median per decade is not always above the current median price, we see that roughly half of all homes are still priced above the median when categorized by decade built.
+
+Finally, we will consider a density plot that considers the houses being above median price by year built.
+
+```{r}
+ggplot(train, aes(x=yr_built, color=compare))+
+  geom_density()+
+  labs(x="Year Built", y="Density", title="Density Plot of Price above Median by Year Built")
+```
+
+From the above graph, we see that most of the houses which are below median price were built between the 1940s and the 1970s. For houses which are above the median, they are found mostly around the 1920s decade, as well as the present day, with a majority found from 1980 to 2010.
+
+
+**Year Renovated**
+
+```{r}
+yr_renovated_not_zero<-train[which(train$yr_renovated > 0),]
+
+ggplot(yr_renovated_not_zero, aes(x=yr_renovated, color=compare))+
+  geom_density()+
+  labs(x="Year Renovated", y="Density", title="Density Plot of Price above Median by Year Renovated")
+```
+
+After removing the values which are zero (indicating the house has never been renovated), we see that the majority of houses above the median price were renovated after the 1980s. Houses which are below the median follow a steady growth along the decades, with some of them peaking after the 2000s decade.
+
+# Analysis of Logistic Regression
+
+
+Before we can start to work in the regression formula, we will define the response variable as a binary indicator. Especifically, our response's name will be `compare`, and it will determine whether a house's price is above the median or not. The houses that are above the median will be labeled as $\hat{y}=1$, and those which are not will be labeled $\hat{y}=0$. 
+
+We want to assess our response variable with both numerical and categorical predictor variables. The numerical variables for this model are year built and year renovated, while the categorical variables we will use include waterfront, condition, view, and grade. Waterfront is already a binary indicator variable, but the latter three of these are labeled using indices ranging from 1 to 5, 0 to 4, and 1 to 13, respectively. 
+
+Given the nature of the categorical variables, there is no quantifiable way to measure the change from, say, a 9 to a 10 for the grade variable. Thus, instead of using the numbers from their given range, we will transform all these variables into indicator variables, where we determine whether the values of the data set are above or below the set value.
+
+First, we find the median value of the condition variable. We know that it is 3, so variables who have a condition of 4 or 5 are going to be labeled as 1, while those which have a condition level of 1, 2, or 3 will be labeled as 0.
+
+We will also compare the view variable, and it has a given range of 0 to 4. However, the median of this variable is 0, so again the value of the indicator variable will be 1 if the view is greater than 0, and 0 otherwise.
+
+Finally, we will transform the grade variable. According to the Kaggle website where we draw our data, the indices 11-13 suggest a high quality level for the design of a house. Taking this as the standard level, we reserve the value of 1 to those houses with grade level in this range, with 0 if they fail to attain it.
+
+Our converted model will therefore contain four indicator variables, as well as two numerical variables, in order to determine whether a house is above or below the median price.
+
+
+```{r}
+#middle<-median(train$price)
+#compare<-train$price > middle
+#train.new<-data.frame(train, compare)
+
+#convert to factor
+#condition_med<-train.new$condition > median(train.new$condition)
+#view_med<-train.new$view > median(train.new$view)
+#grade_med<-train.new$grade > 10
+#train.new$waterfront<-factor(train.new$waterfront)
+
+#merge into the original data frame
+#factored<-data.frame(train.new, condition_med, view_med, grade_med)
+```
+
+
+We carry out our logistic regression 
+
+
+```{r}
+result<-glm(compare~yr_built+yr_renovated+waterfront+condition_med+view_med+grade_med, family=binomial, data=train)
+summary(result)
+```
+
+
+From this regression coefficients, we can write the estimated logistic regression equation as
+
+$$
+\log\left( \frac{\hat{\pi}}{1-\hat{\pi}}\right) = -11.36 + 0.005616x_1 + 0.000433x_2 + 0.5762I_1 + 0.1676I_2 + 1.563I_3 + 16.06I_4
+$$
+
+
+We can interpret this logistic equation formula by considering each predictor variable's regression coefficient
+
+*(i)* For every single year increase, the estimated probability that the house is above the median price is multiplied by $e^{0.005616} = 1.005632$, when controlling for all the other variables. This means that the newer the house is, the more likely it is to be above the median price.  
+
+
+*(ii)* For each additional year a house was last renovated, the estimated probability that the house will be above median price is multiplied by $e^{0.000433} = 1.000433$, when controlling for all the other variables. The more recent a house was renovated, the more likely it will be to be worth more.
+
+
+*(iii)* The estimated probability that a house overlooking the waterfront is above the median price is $e^{0.5762} = 1.779264$ times the probability for houses that are not near the waterfront, when controlling for all the other variables. There may exist a link after all between houses near the waterfront and them having a higher price. 
+
+
+*(iv)* The estimated probability that a house with above-median condition is above the median price is $e^{0.1676} = 1.182464$ times the probability for houses that are below the median in condition level, when controlling for all the other variables. The inside condition of a house determines a role in its price, as expected.
+
+
+*(v)* The estimated probability that a house with above-median view is above the median price is $e^{1.563} = 4.773119$ times the probability for houses that are below the median in view level, when controlling for all the other variables. The view index of a house determines a role in its price.
+
+
+*(vi)* Finally, according to the regression model, the estimated probability that a house with great grade level is above the median price is $e^{16.06} = 9435597$ times more likely than houses which are below the median, , when controlling for all the other variables. This final result appears to be very questionable, as we will see during our next analysis.
+
+
+We now compare our model to determine whether it is useful in predicting whether a house's price is above the median better than random sampling. Let the null hypothesis be that $\beta_j=0$ for $j=1,2,3,4,5,6$, and the alternative hypothesis be that at least one of the $\beta_j \neq 0$. Consider a model with no predictors.
+
+
+```{r}
+none<-glm(compare~1, family=binomial, data=train)
+TS<-none$deviance - result$deviance
+TS
+```
+The p value is given by 
+
+```{r}
+1-pchisq(924.1545,6)
+```
+
+
+So we reject the null. The data supports our model over an intercept-only model. Next, we want to check the individual predictor variables, and whether we can remove some of them if they are not contributing enough to the full model. We will start by considering whether we can remove the waterfront and the grade variables.
+
+
+Let the null hypothesis be that $\beta_3 = \beta_6 = 0$; that is, that both predictors are not contributing any additional information in presence of the other variables. The alternative hypothesis is that at least one of $\beta_3$ or $\beta_6$ are not equal to 0. By carrying out the likelihood ratio test, we find that 
+
+```{r}
+minimal<-glm(compare~yr_built+yr_renovated+condition_med+view_med, family=binomial, data=train)
+
+test_stat<-minimal$deviance - result$deviance
+test_stat
+```
+
+```{r}
+1-pchisq(245.2246,2)
+```
+
+So we reject the null. This means we cannot drop both waterfront and grade from our model. However, we can try to drop only the grade predictor, since it is the one that poses the more questionable results in the regression formula. We do this by using the Wald test.
+
+Let $H_0 \colon \beta_6 = 0; H_a \colon \beta_6 \neq 0$.
+
+
+$$
+Z = \frac{\hat{\beta}_6 - 0}{se(\hat{\beta}_6)} = \frac{16.06}{139.4} = 0.115
+$$
+
+The corresponding p-value is 
+
+```{r}
+2*(1-pnorm(abs(0.115)))
+```
+So we reject the null, ad the data supports removing the grade predictor from the model. Our new logistic regression equation will be given by 
+
+
+```{r}
+gradeless<-glm(compare~yr_built+yr_renovated+condition_med+view_med+waterfront, family=binomial, data=train)
+summary(gradeless)
+```
+And now we have our improved logistic regression equation.
+
+$$
+\log\left( \frac{\hat{\pi}}{1-\hat{\pi}}\right) = -13.15 + 0.006537x_1 + 0.000441x_2 + 0.1585I_1 + 1.653I_2 + 0.6518I_3
+$$
+
+We check as well for any multicollinearity in our model by using the VIFs
+
+
+```{r,include=FALSE}
+library(car)
+```
+
+
+
+```{r}
+vif(result)
+```
+
+There appears to be almost no signs of multicollinearity.
+
+
+
+```{r}
+library(ROCR)
+
+preds<-predict(gradeless,newdata=test, type="response")
+
+##produce the numbers associated with classification table
+rates<-ROCR::prediction(preds, test$compare)
+
+##store the true positive and false postive rates
+roc_result<-ROCR::performance(rates,measure="tpr", x.measure="fpr")
+
+##plot ROC curve and overlay the diagonal line for random guessing
+plot(roc_result, main="ROC Curve for Reduced Model")
+lines(x = c(0,1), y = c(0,1), col="red")
+```
+
+
+
+```{r}
+table(test$compare, preds>0.5)
+```
+
+```{r}
+auc<-ROCR::performance(rates, measure = "auc")
+auc@y.values
+```
+
+
+
+
+
+
+
+
+
+
+
