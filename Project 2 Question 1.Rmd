@@ -33,6 +33,33 @@ p {
 ```
 
 # Section 1: 
+Home ownership is one way millions of Americans build wealth. Homes are the 
+foundations for millions of families but what makes one home more valuable than
+another? When I purchased a home the first things I took into consideration were
+the size of the home, the number of bedrooms and the number of bathrooms but are
+these the most important internal housing factors that drive up the price of a 
+home? Our team conducted a study to determine what internal housing factors 
+matter most within King County, Washington. 
+
+The team did an analysis of the following internal housing factors; 
+bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, 
+sqft_basement to see what had the greatest influence on housing prices.Initially
+we were able to narrow the focus of our study to just four predictor variables,
+which were the number of bathrooms, square footage of the home, square footage 
+above ground of a home and the construction grade and design of a home. We 
+further reduced our model by choosing a subset of our square footage variables 
+to only include the overall square footage, leaving our model with three 
+predictor variables. We found that the number of bathrooms actually had a 
+negative correlation with the price which intuitively does not make sense. 
+From my own personal experience of buying and selling homes, more bathrooms is 
+typically a desirable trait so we further reduced our model to two 
+predictor variables. 
+
+In conclusion the two most influential variables on housing prices in King County 
+Washington are the square footage of the home and the construction grade of the 
+home.
+
+
 
 # Section 2: 
 
@@ -195,6 +222,25 @@ ggplot(train, aes(x=bathrooms, y=price))+
 ```
 This relationship is more noticeable, as having more bathrooms significantly increases the housing price.
 
+```{r}
+ggplot(train, aes(x=grade,y=price))+
+  geom_point()+
+  scale_y_continuous(labels = comma)+
+  labs(x="Grade", y="Price ($)",
+       title="Scatterplot of Grade against the Price")
+```
+In this scatterplot we can see a generally upward trend as the grade increases
+so does the price of homes.
+
+```{r}
+ggplot(train, aes(x=grade,y=sqft_living))+
+  geom_point()+
+  scale_y_continuous(labels = comma)+
+  labs(x="Grade", y="Price ($)",
+       title="Scatterplot of Grade against the Price")
+```
+
+
 # Section 5
 
 For this model we are looking at how internal housing factors effect the price of the home. In this model there are multiple
@@ -232,28 +278,36 @@ result_mlr<-lm(price~., data=train_mlr)
 reduced_mlr<-lm(price~bathrooms+sqft_living+grade, data=train_mlr)
 summary(reduced_mlr)
 ```
-The p-value for the ANOVA F test is very small. Additionally, the individual t tests
-suggest all of the predictors are significant, given the other predictors.
+Here we have fitted a regression for both the full and reduced models. The 
+p-value for the ANOVA F test of the reduced model is very small. 
+Additionally, the individual t tests suggest all of the predictors are 
+significant, given the other predictors.
 
 ```{r}
 #check VIF for signs of multicollinearity
 faraway::vif(reduced_mlr)
 ```
-VIF's for this reduced model are all below 4 suggesting there is not a huge issue with
-milticollinearity.
-
+In the previous correlation plot we saw signs of collinearity between the 
+predictor variables. Now we will look at the VIF's for each variable to try and 
+determine if there are signs of multicollinearity. The VIF's for the
+reduced model are all below 4 suggesting there is not a huge issue with
+multicollinearity.
 
 ```{r}
 #compare the full model with the reduced model
 anova(reduced_mlr, result_mlr)
 ```
+The reduced model appears significant and does not have issues with multi
+colinearity but we need to conduct the appropriate hypothesis test to see if 
+the reduced model is better than the full model.
+
 Hypothesis for the general linear F-Test
 H0 : β1 = β4 = β5 = β6 = β7 = 0.
 Ha : not all β1, β4, β5, β6, β7 are zero.
 
 The F-Stat is very large with a small p-value. Our data suggests we can drop 
-bedrooms, floors, condition, sqft_above and sqft_basement and go with the reduced 
-model. 
+bedrooms, floors, condition, sqft_above and sqft_basement and go with the 
+reduced model. 
 
 
 ```{r}
@@ -261,6 +315,9 @@ model.
 par(mfrow=c(2,2))
 plot(reduced_mlr)
 ```
+Now that we have determined our reduced model is more appropriate than the full
+model we need to check that all of our assumptions have been met.
+
 We see that the residuals are not evenly scattered across the
 horizontal axis, and their vertical variation is not constant across 
 the plot. So neither assumption 1 nor assumption 2 is met.
@@ -270,8 +327,8 @@ First we transform the y variable.
 ```{r}
 boxcox(reduced_mlr, lambda=seq(-0.5,0.5,0.1))
 ```
-Based on the Box Cox plot, a log transformation on the response variable should be performed,
-so y∗ = log(y).
+Based on the Box Cox plot, a log transformation on the response variable should 
+be performed, so y∗ = log(y).
 
 ```{r}
 #log transform y
@@ -298,6 +355,11 @@ train_mlr$log_sqft_living<-log(train_mlr$sqft_living)
 train_mlr$log_grade<-log(train_mlr$grade)
 ```
 
+After transforming both the predictor and response variables we see that the 
+residuals are evenly scattered across the horizontal axis, and their 
+vertical variation is constant across the plot. Therfore both assumptions 1 and 
+2 are met.
+
 ```{r}
 reduced_mlr_3<-lm(ystar~log_bathrooms+log_sqft_living+log_grade, data=train_mlr)
 ##create diagnostic plots after x and y transformations
@@ -307,8 +369,13 @@ plot(reduced_mlr_3)
 ```{r}
 summary(reduced_mlr_3)
 ```
-Intuitively it does not make sense that the price decreases as you add bathrooms.
-So I removed the predictor bathrooms and the below graphs show that assumptions are met.
+After fitting the model with the 3 predictors we see that bathrooms has a 
+negative estimate which, intuitively it does not make sense that the price 
+decreases as you add bathrooms. So we removed the predictor bathrooms and the 
+below graphs show that assumptions 1 & 2 are met.Additionally, the errors are 
+normally distributed. Although assumption 4 is the least important of the 
+assumptions, it is important to determine if it is met. We use the Q-Q residuals
+plot, and if it falls linearly at 45 degrees.
 
 
 ```{r}
@@ -320,12 +387,17 @@ plot(reduced_mlr_4)
 ```{r}
 summary(reduced_mlr_4)
 ```
-
+In the summary above we see that we have a large F Statistic with a low
+p value. Additionally each individual test statistic is high with very low
+p value meaning each our two predictor model is significant.
 
 ```{r}
 anova(reduced_mlr_3, reduced_mlr_4)
 ```
-
+Now we compare if our two predictor model is more significant than our three
+predictor model. We have a large F statistic with a low p value indicating that 
+we can drop the predictor variable bathrooms and go with the further reduced 
+model.
 
 ```{r}
 # Outliers
@@ -362,8 +434,31 @@ COOKS<-cooks.distance(reduced_mlr_4)
 COOKS[COOKS>1]
 ```
 
+Here we take a look at our outliers, leverage points and influential 
+observations. We find that in each category we have multiple data points. Our 
+group should consult with a subject matter expert to see which of these data 
+points do not make sense contextually and need to be removed from the data set.
+
+```{r}
+test$log_bathrooms<-log(test$bathrooms)
+test$log_sqft_living<-log(test$sqft_living)
+test$log_grade<-log(test$grade)
+test$ystar<-log(test$price)
+```
 
 
+```{r}
+preds<-predict(reduced_mlr_4, data=mlr)
+sum_preds<-sum(preds)
+preds_2<-predict(reduced_mlr_4, newdata=test)
+sum_preds2<-sum(preds_2)
+difference<-sum_preds-sum_preds2
+square<-difference^2
+square/nrow(test)
+```
+In this scenario the average squared difference between response and its 
+prediction or average squared prediction error is .0033 which is really low and
+means the error between the training data and the test data is very low.
 
 
 
