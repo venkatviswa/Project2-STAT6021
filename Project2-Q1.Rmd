@@ -1,12 +1,11 @@
 ---
 title: 'Stat 6021: Project 2'
-author: 'Group 5: Etienne Jimenez, Bardia Nikpour, Christian Ollen,Venkat Viswanathan'
+author: 'Group 5'
 output:
-  pdf_document:
-    toc: true
-  html_notebook:
-    toc: true
-    toc_float: true
+  bookdown::pdf_document2:
+    latex_engine: lualatex
+  tufte::tufte_handout:
+    latex_engine: xelatex
 ---
 
 
@@ -31,8 +30,6 @@ p {
 
 ```
 
-
-
 ```{r setup, include=FALSE}
 rm(list = ls())
 ```
@@ -50,8 +47,6 @@ rm(list = ls())
 - Year Built and Price: No very a strong correlation is present between property age and price which indicates that the more dominant factors might are some different other ones.
 - Model Performance: We began our analysis with a comprehensive set of predictors in our linear regression model and gradually reduced the number of predictors by removing variables with insignificant effects on our model — sqft_basement, condition, and homes with 8 bedrooms and 1.5 floors. Data refinement resulted in the reduction of RMSE, MAE, and MAPE variables which demonstrated the improved model's predictive accuracy.
 - Model Diagnostics: Diagnostic plots support overall a good fit but reveal some features which do not meet the linearity requirements, do not have identical variance and contain some outliers. These deserve further investigation.
-- Model Enhancement: The introduction of interaction terms (grade^sqft^living and view^grade) into the linear regression model brought about another performance boost of the model.
-- Logistic Regression Analysis: For assessing model effectiveness, accuracy turned to be high, but in view of imbalanced set, ROC-AUC is used as well. An AUC of 0.99 means that the model is quite well at the waterfront presence identification, which has a major effect on the selling price above the median.
 
 Concisely, the analysis has shown that characteristic factors such as space and presence on waterfront and condition of home appear to be the major contributors to the determination of prices, while others do not seem to have consistent significance as pertains to the dataset. Model diagnostics point to the fact that regression models require careful attention to the underlying assumptions; and interaction terms help in characterizing the observed relationships between explanatory and response variables, which are the elements of real-world data. The AUC value will let us know how good the decision-making of the logistic regression model would be for the data set with imbalanced data classes. Through a thorough analysis, we come up with useful information to retail clientele, sellers, and real estate agents from the area of King County, WA.
 
@@ -106,9 +101,9 @@ The above-mentioned variables are the original variables
 
 # Section 3
 
-### Question 1
+## Question 1
 
-**What internal housing factors influence the price of homes in King County from May  2014 to May 2015?**
+**What internal housing factors influence the price of homes in King County from May 2014 to May 2015? **
 
 •	Response Variable: Home price
 
@@ -118,45 +113,42 @@ The above-mentioned variables are the original variables
 # Section 4
 
 ```{r message=FALSE, echo=FALSE}
+# importing libraries
 library(tidyverse)
 library(caret)
 library(ggplot2)
 library(dplyr)
-library(corrplot)
 library(car)
+library(corrplot)
 ```
 
 
-```{r include=FALSE}
+```{r message=FALSE, echo=FALSE}
+
+# reading data
 kc_house_data <- read.csv("kc_house_data.csv")
-head(kc_house_data)
+#head(kc_house_data)
 
-```
-
-
-```{r include=FALSE}
 # converting date to date format: date is in this format: 20141013T000000
 kc_house_data$date <- as.Date(substr(kc_house_data$date, 1, 8), format = "%Y%m%d")
 kc_house_data$date <- as.Date(kc_house_data$date, format = "%Y-%m-%d")
-```
 
-```{r echo=FALSE}
 # selecting data from May 2014 to May 2015
 selected_data <- kc_house_data %>% filter(date >= "2014-05-01" & date <= "2015-05-31")
-```
 
-```{r echo=FALSE}
 # id and date are not necessary for the analysis
 selected_data <- selected_data %>% select(-id, -date)
-```
 
-
-
-```{r echo=FALSE}
+# removing duplicate values
 selected_data <- selected_data[!duplicated(selected_data), ]
 ```
 
+
+## Distribution of Price
+
 ```{r echo=FALSE}
+
+# histogram of price
 ggplot(selected_data, aes(x = price)) + geom_histogram(bins = 50, fill = "blue") + 
   labs(title = "Distribution of Price", x = "Price", y = "Frequency")
 
@@ -164,8 +156,9 @@ ggplot(selected_data, aes(x = price)) + geom_histogram(bins = 50, fill = "blue")
 
 The distribution is highly right-skewed, with a large frequency of lower-priced items and very few high-priced ones. The majority of prices of the houses fall close to the lower end of the price spectrum, which means that higher prices are outliers in this particular dataset.
 
-
+## Distribution of Bedrooms
 ```{r echo=FALSE}
+# checking distribution of bedrooms
 selected_data %>% count(bedrooms)
 
 ```
@@ -173,44 +166,34 @@ selected_data %>% count(bedrooms)
 The distribution of bedrooms in the dataset shows that three-bedroom houses are the most common, followed by those with four bedrooms. Houses with 33 bedrooms is only one, along with those with 11 and 10 bedrooms, appear to be outliers. To maintain data integrity, we will exclude these outliers from further analysis.
 
 ```{r echo=FALSE}
+# removing outliers from bedroom column
 selected_data <- selected_data %>% filter(bedrooms != 33, bedrooms != 11, bedrooms != 10)
 ```
 
 
+## Distribution of Bathrooms
+
 ```{r echo=FALSE}
+# checking distribution of bathrooms
 selected_data %>% count(bathrooms)
 
 ```
 
 The distribution of bathrooms in the dataset shows that three-bathroom houses are the most common, followed by those with 3.5 bathrooms Houses with 8 bathrooms house listing is 2 one
 
-
+## price vs Square feet Living
 ```{r echo=FALSE}
+# scatterplot of price vs sqft_living
 ggplot(selected_data, aes(x = sqft_living, y = price)) + geom_point() + 
-  labs(title = "Price vs Sqft_living", x = "Sqft_living", y = "Price")
+  labs(title = "Price vs Square feet Living", x = "Square feet Living", y = "Price")
 
 ```
 The scatter plot shows the correlation between square feet of living space and the cost of the apartments. The fact that we have an upward trend, revealing that the increase in price is proportional to the rise in the area, while it's a bit different from linear, is another proof of this cost-effectiveness. On the flip-side, there are some data points with big living area that is drastically more expensive than the rest of the listing thereby, showing these could be luxury or premium properties. These values are plotted far from the core of data and form a series of clusters that are anchored at specific points.
 
-
-
-```{r }
-selected_data %>% count(waterfront)
-
-```
-
-There are total of 21,608 houses, only 163 have a waterfront feature, while 21,445 do not. This indicates that waterfront properties are quite rare in this dataset, representing less than 1% of the total houses. The scarcity of waterfront homes could potentially make them more desirable and perhaps more expensive in the housing market.
-
+## Prices vs Bedrooms
 
 ```{r echo=FALSE}
-selected_data %>% count(view)
-
-```
-
-Most of the houses have view 0. followed by view 2. view 4 is the least. view with value 1 is almost close to view 4.
-
-
-```{r echo=FALSE}
+# boxplots of prices vs bedrooms
 selected_data$bedrooms <- factor(selected_data$bedrooms, levels = 1:9)
 ggplot(selected_data, aes(x = bedrooms, y = price)) +
   geom_boxplot() +
@@ -220,19 +203,22 @@ ggplot(selected_data, aes(x = bedrooms, y = price)) +
 
 The boxplot represent the property prices distribution in line with the quantity of the bedrooms. The mu price continuously rises with the quality up to a number of bedrooms, after which it exactly fluctuates. The scatter plot of average prices sorted by category of bedrooms is such that the spread of each category's prices increase as the number of bedrooms increases, as shown by the longer boxes and whiskers, pointing to a bigger spread of property values. Particularly there are a great big number of outliers, especially in the upper area of rooms per property, which perhaps means that there are some properties, if many bedrooms have them, that are crushed against the mean of category, if it’s in rooms.
 
+## Price vs Floors
 
 ```{r echo=FALSE}
+# boxplot of price vs floors
 selected_data$floors <- factor(selected_data$floors, levels = c(1, 1.5, 2, 2.5, 3, 3.5))
 ggplot(selected_data, aes(x = floors, y = price)) +
   geom_boxplot() +
   labs(title = "Price vs Floors", x = "Floors", y = "Price")
-
-
 ```
 
 There are a significant number of community properties with 1 floor and the total price for them normally falls within a wide range. However, the median price for these types of properties is the cheapest among all the categories. Two-story boxes on the balancing beam point to the significantly larger median price, and a large part of the tale is the numerous outliers-obviously expensive homes. Residential units with one-and-half, two-and-half, and three floors have very small representation of the dataset and their price spectral is a bit uneven, but in particular, there are a few outliers among the 3-floor home residences. The scarce type of 3.5 floor homes have the highest median prices. The spread range here is narrow which implies that these house types have a pricing consistency. Outliers are present in all categories of floors, suggesting that rare or special geo-spatial attributes may be contributing to higher pricing.
 
+Condition vs Price
+
 ```{r echo=FALSE}
+# boxplot of condition vs price
 selected_data$condition <- as.factor(selected_data$condition)
 ggplot(selected_data, aes(x = condition, y = price)) +
   geom_boxplot() +
@@ -245,7 +231,10 @@ Properties in conditions rated as 1 and 2 have a narrower range of prices with l
 
 
 ```{r echo=FALSE, message=FALSE}
-correlation_matrix <- selected_data %>% select(price, sqft_living, sqft_lot, sqft_above, sqft_basement, sqft_living15, sqft_lot15, lat, long) %>% cor()
+selected_data$condition <- as.numeric(as.factor(selected_data$condition))
+selected_data$grade <- as.numeric(as.factor(selected_data$grade))
+selected_data$floors <- as.numeric(as.factor(selected_data$floors))
+correlation_matrix <- selected_data %>% select(price, sqft_living, sqft_basement, condition, grade, floors, sqft_above) %>% cor()
 
 corrplot(correlation_matrix, method = "color", 
          type = "upper",
@@ -259,322 +248,190 @@ corrplot(correlation_matrix, method = "color",
 title("Correlation Matrix Heatmap")
 ```
 
-Since location is made up of latitude and longitude. if we check the correlation between the lat, price and long price, we can observe than correlation between lat and price is 0.31 which means that there is a weak positive correlation between latitude and price. The correlation between long and price is 0.02 which means that there is a weak correlation between longitude and price. This implies that the location of the house has a weak effect on the price of the house.
-
-
+The Correlation Matrix, a data map created from your information, shows us the relationships between various objects. The strength of the relationship between two items is indicated by each number on this map. A value around one indicates that those variables typically move in together, i.e., as one increases, the other does too. It appears as though they move in different directions when it is close to -1. We begin to see patterns as we examine the map, such as the significant correlation between cost and size—larger houses typically cost more. However, there are also subtle connections that we can miss initially. This map allows us to identify instances where two items are overly similar, which aids in selecting the most relevant data for our investigation. There is a weak positive association between latitude and price, as seen by the correlation between latitude and price of 0.31 when we examine the relationship between latitude, price, and long price. Price and longitude have a weak link, as indicated by the 0.02 correlation between long and price. Comparable to a treasure map that leads us through our data, indicating which avenues to explore and which to keep clear of, enabling us to make informed decisions and reveal what's contained inside.
 
 
 # Section 5
 
-The question is to what extent do size and location affect the price of houses in King County, Washington? We are going to use linear regression to answer this question.
+The question is to what extent do internal housing factor affect the price of houses in King County, Washington? We are going to use linear regression to answer this question.
 
 Our target variable is price and we are going to use all the variables in used to find the correlation between the price and other variables.
-  
+
+
+## Data Transformation and Initial Model Fitting
+
+Here, the house prices (`price`) are log-transformed to normalize the data, which is a common practice when the response variable is skewed. This helps improve the accuracy of linear regression models. An initial linear model is then fitted using a variety of predictors such as the number of bedrooms, bathrooms, square footage, and more. This step is aimed at understanding how these variables impact the log of house prices.
+
+### Regression Equation
+
+$\begin{aligned} & \text { price }=β0+β1(\text { bedrooms })+β2(\text { bathroom })+β3(\text {sqft_living })+β4(\text {floors })+β5(\text {condition })+β6(\text {grade })+β7(\text { sqft_above})β8(\text { sqft_basement })\end{aligned}$
 
 ```{r echo=FALSE}
-
-selected_data_subset <- selected_data %>% select(price, sqft_living, sqft_lot, sqft_basement, sqft_lot15, lat, long, bedrooms, bathrooms, zipcode)
-
-
-# making trainig and testing data
-set.seed(6021)
-split.data <- createDataPartition(selected_data_subset$price, p = 0.5, list = FALSE)
-
-train.data <- selected_data_subset[split.data, ]
-test.data <- selected_data_subset[-split.data, ]
-
+# Transformations and initial model fitting
+kc_house_data$log_price <- log(kc_house_data$price)
+initial_model <- lm(log_price ~ bedrooms + bathrooms + sqft_living + floors + condition + grade + sqft_above + sqft_basement, data = kc_house_data)
+summary(initial_model)
 ```
 
-## Regression Analysis
-```{r echo=FALSE}
-linear_reg <- lm(price ~ ., data = train.data)
-summary(linear_reg)
+## Identifying and Removing Aliased Coefficients
 
-
-```
-
-The Multiple R-squared value is 0.5953, which indicates that approximately 59.53% of the variability in house prices can be explained by the variables included in the model. This is a relatively good fit
-
-
-### Size-Related Coefficients:
-
-sqft_living (Size of living area in square feet)
-Coefficient: 304.8
-Significance: Highly significant (p < 2e-16)
-Each additional square foot of living space is associated with an increase of approximately $304.80 in house price, holding all other factors constant.
-
-sqft_lot (Size of the lot in square feet)
-Coefficient: 0.1571
-Significance: Significant (p = 0.02605)
-Each additional square foot of lot size is associated with an increase of about $0.157 in house price, though the effect is much smaller than that of living space.
-
-sqft_basement (Size of the basement in square feet)
-Coefficient: -37.24
-Significance: Highly significant (p = 1.54e-10)
-Surprisingly, each square foot of basement is associated with a decrease of about $37.24 in house price. This might indicate that basement space is not as valued as above-ground living space.
-
-sqft_lot15 (Size of the lot of the 15 nearest neighbors)
-Coefficient: -0.2127
-Significance: Marginally significant (p = 0.05824)
-A larger lot size of the nearest neighbors is associated with a slight decrease in house price, suggesting that more open space around a house (indicating possibly less dense or less desirable areas) may reduce house values.
-
-
-### Location-Related Coefficients:
-
-lat (Latitude)
-Coefficient: 682,700
-Significance: Highly significant (p < 2e-16)
-Houses located further north (higher latitude) are significantly more expensive. This coefficient is very large, indicating that location by latitude is a strong predictor of house price.
-
-long (Longitude)
-Coefficient: -424,000
-Significance: Highly significant (p < 2e-16)
-Houses located further west (lower longitude) are less expensive. This also is a strong effect, indicating the importance of specific areas within the county.
-
-zipcode
-Coefficient: -493.1
-Significance: Highly significant (p < 2e-16)
-Each unit increase in zipcode is associated with a decrease of about $493.10 in house price. 
-
-Size (especially the living area) and location (latitude, longitude, and zipcode) significantly affect house prices in King County, Washington. Living area size shows a strong positive correlation with price, whereas basement size and neighborhood lot size show negative correlations. Location variables suggest significant geographic disparities in housing prices across the county. This analysis highlights the critical role that both size and location play in real estate valuation in King County.
-
-### VIF Values
-```{r echo=FALSE}
-# vif values
-library(car)
-vif(linear_reg)
-
-```
-sqft_living: The VIF = 3.18, the Adjusted VIF = 1.78. These values are ranked as a moderate degree of multicollinearity. This could ignite a correlation between other variables, such as sqft_basement.
-
-sqft_lot: VIF = 1.97, and Adjusted VIF = 1.40 (So that we can recognize multicollinearity problems). Therefore, this points out a little of multicollinearity, which is in line with the nature of lot size would probably not be strongly correlated to the other characteristics such as living space and location.
-
-sqft_basement: VIF = 1.35, and thus, Adjusted VIF = 1.16. Reveals low multicollinearity, which can be interpreted as the fact that the surface area of the basement is not strongly correlated with the remaining house size measures, therefore providing an insight about the balance between the variables used in a model.
-
-sqft_lot15: VIF = 2.00; Adjusted VIF = 1.42. At the same time, the VIF(\(|\rho|\)<0.25, which, in turn, indicates a low to moderate multicollinearity.
-
-lat: With VIF = 1.10 and Adjusted VIF = 1.05. Extremely low multicollinearity among variables except for latitude, therefore, latitude is independent of the rest of the variables.
-
-long: VIF is 1.65, but Adjusted VIF is 1.28. Generally low multicollinearity that shows there is quite a small overlap between longitude and any other predictors.
-
-bedrooms: VIF = 1.75. Adjusted VIF = 1.04. Though it's a factorial variable having a plenty of levels (seven degrees of freedom) there's low multicollinearity.
-
-bathrooms: VIF = 2.44, VIF Adjusted = 1.56. Moderate collinearity, which is perhaps a result of the relationship with other size variables that are similar (like sqft_living).
-
-zipcode: VIF= 1.59, Adjusted VIF= 1.26. Implies a decent absence of multicollinearity, what is a bit surprising considering that zip code is often a universal factor that inherits location and coordinates.
-
-
-### Model Diagnostics
+Aliasing occurs when two or more variables in the model are linearly dependent or highly correlated, making it impossible to determine their individual effects. This code identifies any aliased coefficients in the initial model, helping to identify redundant predictors that should be removed to avoid multicollinearity issues
 
 ```{r echo=FALSE}
-# model diagnostics
-
-plot(linear_reg)
-
+# Identify and remove aliased coefficients
+alias_info <- alias(initial_model)
+aliased_vars <- rownames(alias_info$Complete)
+cat("Aliased variables:", aliased_vars, "\n")
 ```
 
+## Remove Aliased Variables and Fit a Refined Model
 
-Residuals vs Fitted: Red line (which represents a lowess fit) is not approximately horizontal, it may indicate non-linearity, heteroscedasticity, or outliers.
-
-Q-Q (Quantile-Quantile) Plot: Points deviating from the straight line at the ends suggest potential outliers.
-
-Scale-Location (or Spread-Location): The spread is consistent across the fitted values
-
-Residuals vs Leverage: There are few points outside the Cook’s distance which suggest that there are some influential data points. 
-
-
-### RMSE, MAE and R2
-
+Using the information from the previous step, this code creates a formula excluding the aliased variables and fits a refined model. This refined model should be more robust and provide clearer insights, as any linear dependencies among predictors have been removed.
 
 ```{r echo=FALSE}
-test.data <- na.omit(test.data)
-
-# predicting the price
-predicted_price <- predict(linear_reg, test.data)
-
-# RMSE
-RMSE <- sqrt(mean((predicted_price - test.data$price)^2))
-cat('RMSE:', RMSE, '\n')
-
-# MAE
-MAE <- mean(abs(predicted_price - test.data$price))
-cat('MAE:', MAE, '\n')
-
-# R2
-R2 <- 1 - sum((test.data$price - predicted_price)^2) / sum((test.data$price - mean(test.data$price))^2)
-
-cat('R2:', R2, '\n')
-
-
+# Remove aliased variables
+refined_formula <- reformulate(setdiff(names(coef(initial_model))[-1], aliased_vars), response = "log_price")
+refined_model <- lm(refined_formula, data = kc_house_data)
 ```
 
-The RMSE value is 238510.6 which means that the model is off by $238510.6 on average. The MAE value is 152,000 which means that the model is off by $146,762 on average. The R2 value is 0.59 which means that 59% of the variability in house prices can be explained by the variables included in the model.
+## Check for Multicollinearity Using VIF
 
-## Enhancing model
+Variance Inflation Factor (VIF) scores are calculated to assess multicollinearity, which occurs when predictor variables are highly correlated. High VIF scores indicate potential issues which can negatively impact the model’s performance and interpretability. 
 
 ```{r echo=FALSE}
-# removing sqft_lot15 from train.data and test.data
-train.data <- train.data %>% select(-sqft_lot15)
-test.data <- test.data %>% select(-sqft_lot15)
+# Now, we can check for multicollinearity using VIF
+vif_result <- vif(refined_model)
+cat("VIF Scores after resolving aliasing:\n")
+print(vif_result)
 ```
+
+## Model Refinement - Interaction Terms and Removing Non-Significant Predictors
+
+In this step, the model is updated to include an interaction term between `bedrooms` and `bathrooms`, while removing the individual `bedrooms` and `floors` predictors. Interaction terms allow the model to capture complex relationships between variables while removing non-significant predictors helps streamline the model.
+
+### Regression Equation
+
+$\begin{aligned} & \text { price }=β0+β1(\text { bedrooms })+β2(\text { bathroom })+β3(\text {sqft_living })+β4(\text {condition })+β5(\text {grade })+β6(\text { sqft_above})+β7(\text { sqft_basement })\end{aligned}$
 
 ```{r echo=FALSE}
-# training the model
-enhanced_model <- lm(price ~ ., data = train.data)
-summary(enhanced_model)
-
+# Model refinement - Interaction terms and removing non-significant predictors
+refined_model <- update(refined_model, . ~ . + bedrooms:bathrooms - bedrooms - floors)
+cat("Model diagnostics:\n")
+print(summary(refined_model))
 ```
 
-Multiple R-squared of initial model is  0.5953 and Multiple R-squared of enhanced model is 0.5952. The Multiple R-squared value of the enhanced model is fractional lower than the initial model and we simplified the model by removing sqft_lot15.
+## Checking Model Diagnostics
 
-### VIF Values
+This code generates diagnostic plots for the refined model to evaluate its performance. The plots typically include residuals vs. fitted values, normal Q-Q plots, scale-location plots, and residuals vs. leverage plots. These plots help in assessing the assumptions of linear regression and identifying potential issues like non-linearity, heteroscedasticity, and influential points.
+
+Residuals vs Fitted: This plot shows the residuals on the y-axis and the fitted values on the x-axis. It helps to check for non-linearity, unequal error variances, and outliers. If the points form a horizontal band, it indicates that the linearity assumption holds, while patterns or trends suggest model issues.
+
+Q-Q (Quantile-Quantile) Plot: This plot compares the standardized residuals against a theoretical normal distribution. If the residuals follow a straight line, this suggests that they are normally distributed. Deviations from the line indicate departures from normality.
+
+Scale-Location (or Spread-Location): This plot displays the square root of the standardized residuals against the fitted values. It helps to check for homoscedasticity (constant variance). A horizontal line indicates equal spread, while a fan or funnel shape suggests changing variance.
+
+Residuals vs Leverage: This plot highlights influential data points. It shows the standardized residuals against leverage, a measure of how far each data point is from the average predictor value. Points with high leverage and high residuals can overly influence the model, indicated by Cook's distance lines.
 
 ```{r echo=FALSE}
-# vif values
-vif(enhanced_model)
+# Checking model diagnostics
+par(mfrow = c(2, 2))
+plot(refined_model)
 ```
+## Checking for Influential Observations, High Leverage Observations, and Outliers
 
-a VIF above 10 suggests high multicollinearity, although some sources suggest a threshold of 5 can also be a concern in more sensitive analyses. We don't have any VIF values above 5, which indicates that multicollinearity is not a significant issue in the enhanced model.
-
-### Model Diagnostics
+This code identifies and removes influential observations that can skew the model’s results. High leverage points and outliers are identified based on the "hat" values, which measure how far each observation’s predictor values are from the average predictor values. Removing such influential points helps in achieving a more reliable model.
 
 ```{r echo=FALSE}
-
-plot(enhanced_model)
-
+# Checking for influential observations, high leverage observations, and outliers
+influence_measures <- influence.measures(refined_model)
+high_influence <- influence_measures$infmat[, "hat"] > (2 * mean(influence_measures$infmat[, "hat"]))
+kc_house_data <- kc_house_data[!high_influence, ]
+summary(kc_house_data)
 ```
+## Re-Fitting the Model Without Influential Observations
 
-Residuals vs Fitted: Red line (which represents a lowess fit) is not approximately horizontal, it indicate non-linearity, heteroscedasticity, or outliers.
-
-Q-Q (Quantile-Quantile) Plot: Points deviating from the straight line in the start and at the ends suggest potential outliers.
-
-Scale-Location (or Spread-Location): The spread is not consistent across the fitted values, it suggests heteroscedasticity.
-
-Residuals vs Leverage: There are no points outside the Cook’s distance which suggest that there are no influential data points. 
-
-
-### RMSE, MAE and R2
+After removing the influential observations, the model is refitted to the refined dataset. This step ensures that the model is not biased by any problematic data points.
 
 ```{r echo=FALSE}
-# predicting the price
-predicted_price <- predict(enhanced_model, test.data)
-
-# RMSE
-RMSE <- sqrt(mean((predicted_price - test.data$price)^2))
-cat('RMSE:', RMSE, '\n')
-
-# MAE
-MAE <- mean(abs(predicted_price - test.data$price))
-cat('MAE:', MAE, '\n')
-
-# R2
-R2 <- 1 - sum((test.data$price - predicted_price)^2) / sum((test.data$price - mean(test.data$price))^2)
-cat('R2:', R2, '\n')
-
-```
-
-There is a slight difference between the intial model and the enhanced model. The RMSE value is 238,594 which means that the model is off by $238,594 on average. The MAE value is 146768 which means that the model is off by $146,768 on average. The R2 value is 0.59 which means that 59% of the variability in house prices can be explained by the variables included in the model.
-
-## Comparison of model
-
-```{r echo=FALSE}
-anova(linear_reg, enhanced_model)
-
-
-```
-
-Model 1 holds 4 variables sqft_lot15 along with holding other predictors such as effect of sqft_living, sqft_lot, sqft_basement, latitude (lat), longitude (long), number of bedrooms, bathrooms, and zipcode as well as other predictors. Model 2 no longer considers sqft_lot15 but, it acquires only the following variables: sqft_liv15, sqft_bath15, sqft_kitchen15, sqft_backyard15, and sqft_bedroom15.
-
-
-The Residual Degrees of Freedom (Res.Df) for Model 1 is 10777 and for Model 2 is 10778, which reflects this model contains one less predictor in Model 2. The r2 for Model 1 is about 5.6096e+14, then Model 2 r2 is 5.6115e+14, a little bit higher. With the removal of sqft_lot15, the error sum of squares increases, thus it is a reasonable expectation to find the model as non-converging because a predictor contributing functionally significant information has been omitted from the regression.
-
-
-The model with the RSS of -1.8674e+11 has a derivative of 3.5876 F-statistic in contrast to model. The p-value corresponding to the F-statistic is 0.05824, which is just higher (but still closer to) the traditional threshold critical value of 0.05. It is plausible that sqft_lot15 only provides less convincing information to the model rather than significant enough influence it at the 0.05 level. Nevertheless, it makes us attentive of possible underlying cubic relationship between sqft_lot15 and sale_price, while the coefficient of “0%” only means that this could be fairly considered in a more sophisticated scenario or in models with different specifications or more data.
-
-
-## Influential Data Points
-
-```{r echo=FALSE}
-# influential data points
-influence_index <- influence.measures(enhanced_model)$infmat
-influence_index <- as.data.frame(influence_index)
-influence_index <- influence_index %>% rownames_to_column(var = "index")
-influence_index <- influence_index %>% arrange(desc(hat))
-head(influence_index)
-
-```
-
-there are 6 influential data points in the dataset. These data points have a high leverage and high residuals. These data points can have a significant impact on the model. It is important to investigate these data points further to determine if they are outliers or if they are valid data points.
-
-## Removing Influential Data Points
-
-```{r echo=FALSE}
-# removing influential data points
-selected_data <- selected_data %>% filter(!row_number() %in% c(4096, 18437, 18471, 4035, 10956, 15665))
-```
-
-## Final Model
-
-```{r echo=FALSE}
-selected_data_subset <- selected_data %>% select(price, sqft_living, sqft_basement, lat, long, bedrooms, bathrooms, zipcode)
-
-# making trainig and testing data
-set.seed(6021)
-split.data <- createDataPartition(selected_data_subset$price, p = 0.5, list = FALSE)
-
-train.data <- selected_data_subset[split.data, ]
-test.data <- selected_data_subset[-split.data, ]
-```
-
-
-```{r}
-# training the model
-final_model <- lm(price ~ ., data = train.data)
+# Re-fit the model without influential observations
+final_model <- update(refined_model, data = kc_house_data)
 summary(final_model)
-
-
 ```
+## Split Data into Training and Testing Sets
 
-From the summary of the model, we can see that all the variables have p-value less than 0.05 which means that all the variables are significant. The R-squared value is 0.59 which means that 59% of the variability in house prices can be explained by the variables included in the model.
+To evaluate the model's generalizability, the data is split into training and testing sets. 70% of the data is used for training, while 30% is set aside for testing. This ensures that the model is evaluated on unseen data, providing an estimate of how well it might perform in real-world scenarios.
 
-```{r}
-test.data <- na.omit(test.data)
-# predicting the price
-predicted_price <- predict(final_model, test.data)
-
-# RMSE
-RMSE <- sqrt(mean((predicted_price - test.data$price)^2))
-cat('RMSE:', RMSE, '\n')
-
-# MAE
-MAE <- mean(abs(predicted_price - test.data$price))
-cat('MAE:', MAE, '\n')
-
-# R2
-R2 <- 1 - sum((test.data$price - predicted_price)^2) / sum((test.data$price - mean(test.data$price))^2)
-cat('R2:', R2, '\n')
-
-
-```
-performance metrics of the "enhanced model" and the "final model" reveals interesting insights into their predictive capabilities. The enhanced model shows a slightly lower Root Mean Squared Error (RMSE) of 238,594.4 compared to the final model's RMSE of 240,778.2, suggesting that the enhanced model has a marginally better fit to the data with lower average errors on the price predictions. However, the Mean Absolute Error (MAE) for the final model is slightly lower at 146,498 compared to 146,768.1 for the enhanced model, indicating that, on average, the final model's predictions are closer to the actual house prices. Notably, the final model has a slightly higher R² value of 0.5987544 compared to 0.5968458 for the enhanced model, suggesting it explains a marginally higher proportion of the variance in house prices. This indicates a subtle trade-off between the two models: while the enhanced model is slightly better at reducing the squared errors, the final model is marginally more effective in generalizing the predictions across the dataset, as evidenced by a higher R² value.
-
-### VIF Values
 
 ```{r echo=FALSE}
-# vif values
-vif(final_model)
-
+# Split data into training and testing sets
+set.seed(6021)
+training_indices <- createDataPartition(kc_house_data$log_price, p = 0.5, list = FALSE)
+train_data <- kc_house_data[training_indices, ]
+test_data <- kc_house_data[-training_indices, ]
 ```
 
-No multicollinearity is detected in the final model, as all VIF values are below 5, indicating that the predictors are not highly correlated with each other. This suggests that the final model is robust and reliable for predicting house prices in King County, Washington.
+## Fit the Final Model on Training Data
 
-### Model Diagnostics
+The final model is fitted using only the training data. This step ensures that the model learns the relationships between predictors and the response variable without being biased by the testing data.
+
+### Regression Equation
+
+$\begin{aligned} & \text { price }=β0+β1(\text { sqft_living })+β2(\text { grade })+β3(\text {condition })\end{aligned}$
+
 
 ```{r echo=FALSE}
-# model diagnostics
-plot(final_model)
+# Fit the final model on training data
+final_model_fit <- lm(log_price ~ sqft_living + grade + condition, data = train_data)
+
+cat("Final model diagnostics:\n")
+print(summary(final_model_fit))
+
 ```
 
-The diagnostic plots for the final model show that the residuals are approximately homoscedastic, normally distributed, and have constant variance across the fitted values. The Q-Q plot indicates that the residuals are normally distributed, and the residuals vs. leverage plot shows that there are no influential data points that significantly affect the model. These diagnostic plots suggest that the final model is a good fit for the data and meets the assumptions of linear regression.
+## Model Diagnostics on Final Model
+
+The final model's diagnostic plots and summary statistics are generated to evaluate its performance on the training data. These diagnostics help identify potential issues before moving to the testing phase.
+
+Residuals vs Fitted: The plot looks acceptable, with no clear patterns or trends. The points are evenly distributed around zero, indicating that the model's assumptions are generally met. There's an outlier labeled "707306" that might be worth investigating.
+
+Q-Q (Quantile-Quantile) Plot: The residuals align well with the diagonal, indicating that they are approximately normally distributed. This suggests that the normality assumption holds, although the point labeled "707306" again stands out slightly, hinting at a possible outlier.
+
+Scale-Location (or Spread-Location): The plot is relatively horizontal, suggesting consistent variance across fitted values, although there is a slight trend visible. The same outlier is visible here as well.
+
+Residuals vs Leverage: The plot shows that most points have low leverage. These might be influential points, given their positions near the Cook's distance threshold.
+
+```{r echo=FALSE}
+# Model diagnostics on final model
+par(mfrow = c(2, 2))
+plot(final_model_fit)
+```
+
+
+## Evaluate Model Performance on Test Data
+The final step involves evaluating the model's performance on the testing data. The root mean squared error (RMSE) and R-squared values are calculated to gauge the model's predictive accuracy and explanatory power. These metrics provide a clear picture of how well the model generalizes to new data.
+
+### RMSE on Test Data
+The Root Mean Squared Error (RMSE) calculated on the test data is printed on this line. 
+The average discrepancy between the expected and actual values is measured by RMSE.
+A model with lower RMSE values performs better in terms of prediction.
+
+###R-squared
+The value of R-squared, calculated using the test data, is printed on this line. 
+R-squared shows how much of the variance in the dependent variable 'log_price' can be accounted for by the model's independent variables (predictors).
+Greater R-squared values signify an improved model-data fit.
+
+```{r echo=FALSE}
+# Evaluate model performance on test data
+test_predictions <- predict(final_model_fit, newdata = test_data)
+test_residuals <- test_data$log_price - test_predictions
+RMSE <- sqrt(mean(test_residuals^2))
+R_squared <- summary(final_model_fit)$r.squared
+
+# Output model performance metrics
+cat("RMSE on test data:", RMSE, "\n")
+cat("R-squared:", R_squared, "\n")
+```
+
+
 
 
