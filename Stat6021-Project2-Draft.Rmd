@@ -16,16 +16,15 @@ output:
 
 Homeownership is one way millions of Americans build wealth. Homes are the foundations for millions of families, but what makes one home more valuable than another? When one first purchases a home, the first things a person considers are the size of the home, the number of bedrooms, and the number of bathrooms. But are these the most essential internal housing factors that drive up the price of a home? Our team conducted a study to determine what internal housing factors matter most within King County, Washington. 
 
-Our team analyzed the following internal housing factors: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, and sqft_basement to see what had the most significant influence on housing prices. Initially, we were able to narrow the focus of our study to just four predictor variables:
+Our team analyzed the following internal housing factors: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, and sqft_basement to see what had the most significant influence on housing prices. 
 
-- The number of bathrooms
+In our final model we were able to narrow the focus of our study to just three predictor variables:
+
 - The square footage of the home
-- The square footage above the ground of a house
 - The construction grade and design of a home
+- The condition of the home
 
-We further reduced our model by choosing a subset of our square footage variables to only include the overall square footage, leaving our model with three predictor variables. The number of bathrooms negatively correlated with the price, which may seem counterintuitive. From our personal experiences of buying and selling homes, more bathrooms are typically desirable, so we further reduced our model to two predictor variables. 
-
-Our study's findings reveal that the two most influential variables on housing prices in King County, Washington are the square footage of the home and the construction grade of the home. These findings are crucial for understanding the dynamics of the local housing market and can greatly assist in making informed decisions related to real estate.
+Additionally the team analyzed and removed a number of outlier and high leverage data points that influenced the model. In conclusion our study's findings reveal that the three most influential variables on housing prices in King County, Washington are the square footage of the home, the construction grade of the home and the condition of the home. These findings are crucial for understanding the dynamics of the local housing market and can greatly assist in making informed decisions related to real estate.
 
 
 **Question 2**
@@ -247,17 +246,7 @@ The Correlation Matrix, a data map created from your information, shows us the r
 
 The question is to what extent do internal housing factor affect the price of houses in King County, Washington? We are going to use linear regression to answer this question.
 
-Our target variable is price and we are going to use all the variables in used to find the correlation between the price and other variables.
-
-- Price Distribution: The broke in the price of housing is right skew, meaning that the many houses are distributed around lower price range, where the rest of expensive houses are located in the tail of the distribution. Premium homes, as shown within this data set, are outliers inferring.
-- Bedroom Distribution: 3-bedroom houses are the biggest ones, while the number of houses is decreasing as the number of bedrooms is increasing in another one. Beyond enormous houses with more 8 bedrooms are not in usual cases and this is considered as an anomaly.
-- Living Space and Price Correlation: A good correlation can be drawn between the living area size and the house price, however, such a relationship doesn't perfectly fit any specific pattern.
-- Waterfront Rarity: Water frontage properties are indicating shortage; only 0.1% of the dataset being such, which might also justify higher price due to their rarity as a special commodity.
-- Floor Preferences: Of the two predominant styles of homes, either single-story or two-story are typically the most prevalent. The fewer-floor homes of 3.5 storeys are almost as rare as hen's teeth, and this proves that many citizens like living in skyscrapers.
-- View Quality: Its observed that although the number of home without any valuable view approximately equals the number of average(rated 0) views, the outcome of homes possessing higher-leveled (rated 1-2) view are far less.
-- Condition and Price: Houses in better conditions are prone to satisfy the median price, however this rule is not always the case throughout the condition hierarchy.
-- Year Built and Price: No very a strong correlation is present between property age and price which indicates that the more dominant factors might are some different other ones.
-
+Our predictor variable is price and we are going to analyze the previuously listed predictor variables to find what variables influence price.
 
 ## Data Transformation and Initial Model Fitting
 
