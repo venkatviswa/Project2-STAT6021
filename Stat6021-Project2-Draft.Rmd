@@ -16,15 +16,16 @@ output:
 
 Homeownership is one way millions of Americans build wealth. Homes are the foundations for millions of families, but what makes one home more valuable than another? When one first purchases a home, the first things a person considers are the size of the home, the number of bedrooms, and the number of bathrooms. But are these the most essential internal housing factors that drive up the price of a home? Our team conducted a study to determine what internal housing factors matter most within King County, Washington. 
 
-Our team analyzed the following internal housing factors: bedrooms, bathrooms, sqft_living, floors, condition, grade, sqft_above, and sqft_basement to see what had the most significant influence on housing prices. 
+Our team analyzed the following internal housing factors: bedrooms, bathrooms, floors, condition, grade, square feet of living room, square feet of living room above ground floor, and square feet of the basement, to see what had the most significant influence on housing prices. Initially, we were able to narrow the focus of our study to just four predictor variables:
 
-In our final model we were able to narrow the focus of our study to just three predictor variables:
-
+- The number of bathrooms
 - The square footage of the home
+- The square footage above the ground floor of a house
 - The construction grade and design of a home
-- The condition of the home
 
-Additionally the team analyzed and removed a number of outlier and high leverage data points that influenced the model. In conclusion our study's findings reveal that the three most influential variables on housing prices in King County, Washington are the square footage of the home, the construction grade of the home and the condition of the home. These findings are crucial for understanding the dynamics of the local housing market and can greatly assist in making informed decisions related to real estate.
+We further reduced our model by choosing a subset of our square footage variables to only include the overall square footage, leaving our model with three predictor variables. The number of bathrooms negatively correlated with the price, which may seem counterintuitive. From our personal experiences of buying and selling homes, more bathrooms are typically desirable, so we further reduced our model to two predictor variables. 
+
+Our study's findings reveal that the two most influential variables on housing prices in King County, Washington are the square footage of the home and the construction grade of the home. These findings are crucial for understanding the dynamics of the local housing market and can greatly assist in making informed decisions related to real estate.
 
 
 **Question 2**
@@ -101,13 +102,15 @@ library(caret)
 library(car)
 library(corrplot)
 library(ROCR)
+library(faraway)
+library(MASS)
 ```
 
 
 ```{r include=FALSE}
 Data<-read.csv("kc_house_data.csv", sep=",", header=TRUE)
 
-Data<-Data %>% select(-id, -date)
+Data<-Data[, -c(1:2)]
 above_median<-Data$price > 450000
 Data.new<-data.frame(Data, above_median)
 
@@ -147,11 +150,13 @@ train %>% count(bedrooms)
 
 ```
 
-The distribution of bedrooms in the dataset shows that three-bedroom houses are the most common, followed by those with four bedrooms. Houses with 33 bedrooms is only one, along with those with 11 and 10 bedrooms, appear to be outliers. To maintain data integrity, we will exclude these outliers from further analysis.
+The distribution of bedrooms in the dataset shows that three-bedroom houses are the most common, followed by those with four bedrooms. There is only one house with 33 bedrooms, along with those with 11 and 10 bedrooms, appear to be outliers. 
+
+(To maintain data integrity, we will exclude these outliers from further analysis.)
 
 ```{r echo=FALSE}
 # removing outliers from bedroom column
-train <- train %>% filter(bedrooms != 33, bedrooms != 11, bedrooms != 10)
+#train <- train %>% filter(bedrooms != 33, bedrooms != 11, bedrooms != 10)
 ```
 
 
@@ -159,13 +164,14 @@ train <- train %>% filter(bedrooms != 33, bedrooms != 11, bedrooms != 10)
 
 ```{r echo=FALSE}
 # checking distribution of bathrooms
-train %>% count(bathrooms)
+train %>% count(bathrooms) 
 
 ```
 
-The distribution of bathrooms in the dataset shows that three-bathroom houses are the most common, followed by those with 3.5 bathrooms Houses with 8 bathrooms house listing is 2 one
+The distribution of bathrooms in the dataset shows that three-bathroom houses are the most common, followed by those with 3.5 bathrooms. The highest number of bathroom in any one house is 8, with only one house having these many bathrooms.
 
 ## Price vs Square feet Living
+
 ```{r echo=FALSE}
 # scatterplot of price vs sqft_living
 ggplot(train, aes(x = sqft_living, y = price)) + geom_point() + 
@@ -174,7 +180,7 @@ ggplot(train, aes(x = sqft_living, y = price)) + geom_point() +
 ```
 The scatter plot shows the correlation between square feet of living space and the cost of the apartments. The fact that we have an upward trend, revealing that the increase in price is proportional to the rise in the area, while it's a bit different from linear, is another proof of this cost-effectiveness. On the flip-side, there are some data points with big living area that is drastically more expensive than the rest of the listing thereby, showing these could be luxury or premium properties. These values are plotted far from the core of data and form a series of clusters that are anchored at specific points.
 
-## Prices vs Bedrooms
+## Price vs Bedrooms
 
 ```{r echo=FALSE}
 # boxplots of prices vs bedrooms
@@ -199,9 +205,19 @@ ggplot(train, aes(x = floors, y = price)) +
   labs(title = "Price vs Floors", x = "Floors", y = "Price")
 ```
 
-```{r include=FALSE}
+```{r }
 # return bedrooms to be a numeric variable
+train$bathrooms<-as.numeric(train$bathrooms)
 train$bedrooms<-as.numeric(train$bedrooms)
+train$floor<-as.numeric(train$floors)
+train$grade<-as.numeric(train$grade)
+train$sqft_living<-as.numeric(train$sqft_living)
+train$sqft_above<-as.numeric(train$sqft_above)
+train$condition<-as.numeric(train$condition)
+
+
+
+
 ```
 
 There are a significant number of community properties with 1 floor and the total price for them normally falls within a wide range. However, the median price for these types of properties is the cheapest among all the categories. Two-story boxes on the balancing beam point to the significantly larger median price, and a large part of the tale is the numerous outliers-obviously expensive homes. Residential units with one-and-half, two-and-half, and three floors have very small representation of the dataset and their price spectral is a bit uneven, but in particular, there are a few outliers among the 3-floor home residences. The scarce type of 3.5 floor homes have the highest median prices. The spread range here is narrow which implies that these house types have a pricing consistency. Outliers are present in all categories of floors, suggesting that rare or special geo-spatial attributes may be contributing to higher pricing.
@@ -214,8 +230,6 @@ train$condition <- as.factor(train$condition)
 ggplot(train, aes(x = condition, y = price)) +
   geom_boxplot() +
   labs(title = "Price vs Condition", x = "Condition", y = "Price")
-
-
 ```
 
 Properties in conditions rated as 1 and 2 have a narrower range of prices with lower medians, suggesting they are generally less expensive. The median prices seem to increase slightly for properties rated in condition 3, and there's a wider spread of prices, with many outliers indicating some high-priced properties. Condition 4 and 5 properties also show a higher median price compared to lower-rated conditions, with condition 5 showing the most significant spread in prices, though not necessarily the highest median price. This could imply that while good condition may contribute to a higher price, other factors like location or size might also play a significant role in determining a property's value.
@@ -226,6 +240,7 @@ train$condition <- as.numeric(as.factor(train$condition))
 train$grade <- as.numeric(as.factor(train$grade))
 train$floors <- as.numeric(as.factor(train$floors))
 correlation_matrix <- train %>% select(price, sqft_living, sqft_basement, condition, grade, floors, sqft_above) %>% cor()
+
 
 corrplot(correlation_matrix, method = "color", 
          type = "upper",
@@ -244,9 +259,115 @@ The Correlation Matrix, a data map created from your information, shows us the r
 
 # Section 5
 
+
+For this model we are looking at how internal housing factors effect the price of the home. In this model there are multiple predictors influencing the response variable price, therefore multiple linear regression is appropriate. We start by fitting a model with as the predictor variables, and `price` as the response.
+
+```{r echo=FALSE}
+train_mlr <- train[, c('bedrooms', 'bathrooms', 'sqft_living', 'floors', 'condition', 'grade', 'sqft_above', 'sqft_basement', 'price')]
+#pairs(train_mlr, lower.panel = NULL, main="Scatterplot of Quantitative Variables")
+result_mlr<-lm(price~., data=train_mlr)
+summary(result_mlr)
+```
+
+
+Next, we can take a look at the correlations between all of the variables.
+
+```{r echo=FALSE}
+round(cor(train_mlr),3)
+```
+
+
+We note that predictors bathrooms, sqft_living, grade, and sqft_above have moderate to high correlation with the response variable price. At the same time, predictors bedrooms, floors, condition, and sqft_basement do not have a strong correlation to the response variable price.
+
+Additionally, sqft_living and sqft_above seem to be highly correlated. Therefore, We will consider dropping sqft_above in the reduced model, since we would much rather choose the variable which describes the property area more generally. 
+
+We can now consider using bathrooms, sqft_living and grade in the reduced model.
+
+
+```{r echo=FALSE}
+# fit a regression to the reduced model with predictors bathrooms, sqft_living and grade
+reduced_mlr<-lm(price~bathrooms+sqft_living+grade, data=train_mlr)
+summary(reduced_mlr)
+```
+
+The values from the summary() function seem to indicate that, for the reduced model, the p-value for the ANOVA F test is very small. Additionally, the individual t tests suggest all of the predictors are 
+significant, and may consider not removing any of them.
+
+If we check now the VIF function for the reduced model, we obtain the following
+
+```{r echo=FALSE}
+#check VIF for signs of multicollinearity
+faraway::vif(reduced_mlr)
+```
+
+
+Whereas in the previous correlation plot we saw signs of collinearity between the predictor variables, now we observe that the VIF's for the
+reduced model are all below 4, suggesting there is not a huge issue with
+multicollinearity.
+
+All that is left to do now is to carry a hypothesis test to assess whether we can drop five predictor variables from the full model and go with the reduced model instead. Let the null hypothesis be $H_0 \colon \beta_1 = \beta_4 = \beta_5 = \beta_7 = \beta_8 = 0$; and let the alternative hypothesis be $H_a \colon$ at least one of $\beta_1, \beta_4, \beta_5, \beta_7, \beta_8 \neq 0$. We carry an ANOVA General F Test to determine the validity of the initial claim. 
+
+
+```{r echo=FALSE}
+#compare the full model with the reduced model
+#anova(reduced_mlr, result_mlr)
+```
+
+
+The F statistic is very large, with a small p-value. So we can reject the null. Our data suggests we can drop `bedrooms`, `floors`, `condition`, `sqft_above` and `sqft_basement` from the full model, and go with the reduced model instead.
+
+Now that we have determined our reduced model is more appropriate than the full, we have to check whether our model's regression assumptions are met. 
+
+
+```{r}
+#check assumptions
+par(mfrow=c(2,2))
+plot(reduced_mlr)
+```
+
+
+We first observe that the residuals are not evenly scattered across the horizontal axis, and also the variance has not been stabilized yet, with the variance increasing as the data points move from left to right. Thus, assumptions 1 and 2 have not been met yet. Similarly, the QQ residual plot points do not appear to follow the diagonal line, so assumption 4 may not be met yet.
+
+
+We start by addressing assumption 2 first and stabilizing the variance. To do this, we will start by transforming the predictor variable based on the results of the Box Cox plot.
+
+
+```{r echo=FALSE}
+boxcox(reduced_mlr, lambda=seq(-0.5,0.5,0.1))
+```
+
+
+Based on the Box Cox plot, a log transformation on the response variable should be performed, so $y^* = log(y)$. We add this new parameter to our data set and assess the regression assumptions once again
+
+```{r}
+#log transform y
+train_mlr$ystar<-log(train_mlr$price)
+reduced_mlr_2<-lm(ystar~bathrooms+sqft_living+grade, data=train_mlr)
+
+##create diagnostic plots after y transformation
+par(mfrow=c(2,2))
+plot(reduced_mlr_2)
+```
+
+
+
+
+
+
+
 The question is to what extent do internal housing factor affect the price of houses in King County, Washington? We are going to use linear regression to answer this question.
 
-Our predictor variable is price and we are going to analyze the previuously listed predictor variables to find what variables influence price.
+Our target variable is price and we are going to use all the variables in used to find the correlation between the price and other variables.
+
+- Price Distribution: The broke in the price of housing is right skew, meaning that the many houses are distributed around lower price range, where the rest of expensive houses are located in the tail of the distribution. Premium homes, as shown within this data set, are outliers inferring.
+- Bedroom Distribution: 3-bedroom houses are the most common ones, while the number of houses is decreasing as the number of bedrooms is increasing in another one. Beyond enormous houses with more 8 bedrooms are not in usual cases and this is considered as an anomaly.
+- Living Space and Price Correlation: A good correlation can be drawn between the living area size and the house price, however, such a relationship doesn't perfectly fit any specific pattern.
+- Waterfront Rarity: Water frontage properties are indicating shortage; only 0.1% of the dataset being such, which might also justify higher price due to their rarity as a special commodity.
+- Floor Preferences: Of the two predominant styles of homes, either single-story or two-story are typically the most prevalent. The fewer-floor homes of 3.5 storeys are almost as rare as hen's teeth, and this proves that many citizens like living in skyscrapers.
+- View Quality: Its observed that although the number of home without any valuable view approximately equals the number of average(rated 0) views, the outcome of homes possessing higher-leveled (rated 1-2) view are far less.
+- Condition and Price: Houses in better conditions are prone to satisfy the median price, however this rule is not always the case throughout the condition hierarchy.
+- Year Built and Price: No very a strong correlation is present between property age and price which indicates that the more dominant factors might are some different other ones.
+
 
 ## Data Transformation and Initial Model Fitting
 
@@ -258,124 +379,26 @@ $$
 price =\beta_0+ \beta_1x_1 +\beta_2x_2 + \beta_3x_3 + \beta_4x_4 + \beta_5x_5 + \beta_6x_6 + \beta_7x_7 + \beta_8x_8
 $$
 
-
-
-
-```{r echo=FALSE}
-# Transformations and initial model fitting
-train$log_price <- log(train$price)
-initial_model <- lm(log_price ~ bedrooms + bathrooms + sqft_living + floors + condition + grade + sqft_above + sqft_basement, data = train)
-summary(initial_model)
-```
-
-## Identifying and Removing Aliased Coefficients
-
-Aliasing occurs when two or more variables in the model are linearly dependent or highly correlated, making it impossible to determine their individual effects. This code identifies any aliased coefficients in the initial model, helping to identify redundant predictors that should be removed to avoid multicollinearity issues.
-
-```{r echo=FALSE}
-# Identify and remove aliased coefficients
-alias_info <- alias(initial_model)
-aliased_vars <- rownames(alias_info$Complete)
-cat("Aliased variables:", aliased_vars, "\n")
-```
-
-## Remove Aliased Variables and Fit a Refined Model
-
-Using the information from the previous step, this code creates a formula excluding the aliased variables and fits a refined model. This refined model should be more robust and provide clearer insights, as any linear dependencies among predictors have been removed.
-
-```{r echo=FALSE}
-# Remove aliased variables
-#refined_formula <- reformulate(setdiff(names(coef(initial_model))[-1], aliased_vars), response = "log_price")
-refined_model <- lm(log_price ~ bedrooms + bathrooms + sqft_living + floors + condition + grade + sqft_above , data = train)
-summary(initial_model)
-```
-
-## Check for Multicollinearity Using VIF
-
-Variance Inflation Factor (VIF) scores are calculated to assess multicollinearity, which occurs when predictor variables are highly correlated. High VIF scores indicate potential issues which can negatively impact the model’s performance and interpretability. 
-
-```{r echo=FALSE}
-# Now, we can check for multicollinearity using VIF
-vif_result <- vif(refined_model)
-cat("VIF Scores after resolving aliasing:\n")
-print(vif_result)
-```
-
-## Model Refinement - Interaction Terms and Removing Non-Significant Predictors
-
-In this step, the model is updated to include an interaction term between `bedrooms` and `bathrooms`, while removing the individual `bedrooms` and `floors` predictors. Interaction terms allow the model to capture complex relationships between variables while removing non-significant predictors helps streamline the model.
-
 ### Regression Equation
 
 $$
 price =\beta_0+ \beta_1x_1 +\beta_2x_2 + \beta_3x_3 + \beta_4x_4 + \beta_5x_5 + \beta_6x_6 + \beta_7x_7
 $$
 
-```{r echo=FALSE}
-# Model refinement - Interaction terms and removing non-significant predictors
-refined_model <- update(refined_model, . ~ . + bedrooms:bathrooms - bedrooms - floors)
-cat("Model diagnostics:\n")
-print(summary(refined_model))
-```
-
-## Checking Model Diagnostics
-
-This code generates diagnostic plots for the refined model to evaluate its performance. The plots typically include residuals vs. fitted values, normal Q-Q plots, scale-location plots, and residuals vs. leverage plots. These plots help in assessing the assumptions of linear regression and identifying potential issues like non-linearity, heteroscedasticity, and influential points.
-
-Residuals vs Fitted: This plot shows the residuals on the y-axis and the fitted values on the x-axis. It helps to check for non-linearity, unequal error variances, and outliers. If the points form a horizontal band, it indicates that the linearity assumption holds, while patterns or trends suggest model issues.
-
-Q-Q (Quantile-Quantile) Plot: This plot compares the standardized residuals against a theoretical normal distribution. If the residuals follow a straight line, this suggests that they are normally distributed. Deviations from the line indicate departures from normality.
-
-Scale-Location (or Spread-Location): This plot displays the square root of the standardized residuals against the fitted values. It helps to check for homoscedasticity (constant variance). A horizontal line indicates equal spread, while a fan or funnel shape suggests changing variance.
-
-Residuals vs Leverage: This plot highlights influential data points. It shows the standardized residuals against leverage, a measure of how far each data point is from the average predictor value. Points with high leverage and high residuals can overly influence the model, indicated by Cook's distance lines.
-
-```{r echo=FALSE}
-# Checking model diagnostics
-par(mfrow = c(2, 2))
-plot(refined_model)
-```
-
-
-## Checking for Influential Observations, High Leverage Observations, and Outliers
-
-This code identifies and removes influential observations that can skew the model’s results. High leverage points and outliers are identified based on the "hat" values, which measure how far each observation’s predictor values are from the average predictor values. Removing such influential points helps in achieving a more reliable model.
-
-```{r include=FALSE}
-# Checking for influential observations, high leverage observations, and outliers
-influence_measures <- influence.measures(refined_model)
-high_influence <- influence_measures$infmat[, "hat"] > (2 * mean(influence_measures$infmat[, "hat"]))
-train <- train[!high_influence, ]
-summary(train)
-```
-## Re-Fitting the Model Without Influential Observations
-
-After removing the influential observations, the model is refitted to the refined dataset. This step ensures that the model is not biased by any problematic data points.
-
-```{r echo=FALSE}
-# Re-fit the model without influential observations
-final_model <- update(refined_model, data = train)
-summary(final_model)
-```
-
-## Fit the Final Model on Training Data
-
-The final model is fitted using only the training data. This step ensures that the model learns the relationships between predictors and the response variable without being biased by the testing data.
-
 ### Regression Equation
 
 
 $$
-price =\beta_0+ \beta_1x_1 +\beta_2x_2 + \beta_3 x_3 
+price = \beta_0+ \beta_1x_1 +\beta_2x_2 + \beta_3 x_3 
 $$
 
 
 ```{r echo=FALSE}
 # Fit the final model on training data
-final_model_fit <- lm(log_price ~ sqft_living + grade + condition, data = train)
+#final_model_fit <- lm(log_price ~ sqft_living + grade + condition, data = train)
 
-cat("Final model diagnostics:\n")
-print(summary(final_model_fit))
+#cat("Final model diagnostics:\n")
+#print(summary(final_model_fit))
 
 ```
 
@@ -393,8 +416,8 @@ Residuals vs Leverage: The plot shows that most points have low leverage. These 
 
 ```{r echo=FALSE}
 # Model diagnostics on final model
-par(mfrow = c(2, 2))
-plot(final_model_fit)
+#par(mfrow = c(2, 2))
+#plot(final_model_fit)
 ```
 
 
@@ -408,19 +431,19 @@ A model with lower RMSE values performs better in terms of prediction.
 
 ###R-squared
 The value of R-squared, calculated using the test data, is printed on this line. 
-R-squared shows how much of the variance in the dependent variable 'log_price' can be accounted for by the model's independent variables (predictors).
+R-squared shows how much of the variance in the dependent variable log_price can be accounted for by the model's independent variables (predictors).
 Greater R-squared values signify an improved model-data fit.
 
 ```{r echo=FALSE}
 # Evaluate model performance on test data
-test_predictions <- predict(final_model_fit, newdata = test)
-test_residuals <- test$log_price - test_predictions
-RMSE <- sqrt(mean(test_residuals^2))
-R_squared <- summary(final_model_fit)$r.squared
+#test_predictions <- predict(final_model_fit, newdata = test)
+#test_residuals <- test$log_price - test_predictions
+#RMSE <- sqrt(mean(test_residuals^2))
+#R_squared <- summary(final_model_fit)$r.squared
 
 # Output model performance metrics
-cat("RMSE on test data:", RMSE, "\n")
-cat("R-squared:", R_squared, "\n")
+#cat("RMSE on test data:", RMSE, "\n")
+#cat("R-squared:", R_squared, "\n")
 ```
 
 
